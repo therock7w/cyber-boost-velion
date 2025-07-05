@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 
-// Store submitted TikTok links to prevent duplicates
-const submittedLinks = new Set<string>();
+// Store total followers requested per TikTok link
+const followerTracker = new Map<string, number>();
 
 const Index = () => {
   const [tiktokLink, setTiktokLink] = useState('');
@@ -24,6 +23,12 @@ const Index = () => {
     return tiktokRegex.test(url);
   };
 
+  // Check if adding selected followers would exceed 100 total for this link
+  const checkFollowerLimit = (url: string, newFollowers: number): boolean => {
+    const currentTotal = followerTracker.get(url) || 0;
+    return currentTotal + newFollowers > 100;
+  };
+
   // Handle TikTok link input
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const link = e.target.value;
@@ -31,8 +36,8 @@ const Index = () => {
     
     if (link && !validateTikTokUrl(link)) {
       setLinkError('Please enter a valid TikTok profile URL (e.g., https://www.tiktok.com/@username)');
-    } else if (link && submittedLinks.has(link)) {
-      setLinkError('This TikTok profile has already been used. Please try a different one.');
+    } else if (link && selectedFollowers && checkFollowerLimit(link, selectedFollowers)) {
+      setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
     } else {
       setLinkError('');
     }
@@ -41,7 +46,16 @@ const Index = () => {
   // Handle follower selection
   const handleFollowerSelect = (count: number) => {
     setSelectedFollowers(count);
-    setShowMissions(true);
+    
+    // Check if this selection would exceed the limit for the current link
+    if (tiktokLink && checkFollowerLimit(tiktokLink, count)) {
+      setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+      setShowMissions(false);
+    } else {
+      setLinkError('');
+      setShowMissions(true);
+    }
+    
     setWatchedAds([]);
     setFollowClicked(false);
   };
@@ -77,8 +91,9 @@ const Index = () => {
   const handleSend = () => {
     if (!isSendEnabled()) return;
 
-    // Add link to submitted links
-    submittedLinks.add(tiktokLink);
+    // Update follower tracker with new total
+    const currentTotal = followerTracker.get(tiktokLink) || 0;
+    followerTracker.set(tiktokLink, currentTotal + selectedFollowers!);
 
     // Create form data to send to management page
     const formData = {
@@ -86,7 +101,8 @@ const Index = () => {
       followers: selectedFollowers,
       adsWatched: watchedAds.length,
       followCompleted: followClicked,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      totalFollowersForLink: followerTracker.get(tiktokLink)
     };
 
     console.log('Sending data:', formData);
