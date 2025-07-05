@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface MissionData {
   tiktokLink: string;
@@ -29,6 +31,16 @@ const Management = () => {
 
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const getCompletionStatus = (mission: MissionData) => {
+    const requiredAds = Math.floor(mission.followers / 2);
+    const adsCompleted = mission.adsWatched >= requiredAds;
+    const followCompleted = mission.followCompleted;
+    
+    if (adsCompleted && followCompleted) return { status: 'completed', text: 'Completed', color: 'bg-green-500/20 text-green-400' };
+    if (adsCompleted || followCompleted) return { status: 'partial', text: 'In Progress', color: 'bg-yellow-500/20 text-yellow-400' };
+    return { status: 'pending', text: 'Pending', color: 'bg-red-500/20 text-red-400' };
   };
 
   return (
@@ -61,61 +73,137 @@ const Management = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-inter font-bold text-transparent bg-clip-text bg-liquid-gradient">
-                Mission Reports ({missions.length})
-              </h2>
+              <div>
+                <h2 className="text-3xl font-inter font-bold text-transparent bg-clip-text bg-liquid-gradient mb-2">
+                  Mission Reports
+                </h2>
+                <p className="text-liquid-muted font-inter">
+                  {missions.length} {missions.length === 1 ? 'mission' : 'missions'} completed
+                </p>
+              </div>
               <Button onClick={clearAllData} className="liquid-button">
                 Clear All Data
               </Button>
             </div>
 
             <div className="grid gap-6">
-              {missions.map((mission, index) => (
-                <div key={index} className="liquid-card">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-xl font-inter font-semibold mb-4 text-liquid-text">
-                        Mission #{index + 1}
-                      </h3>
-                      <div className="space-y-2 text-liquid-muted">
-                        <p><strong>TikTok Profile:</strong> {mission.tiktokLink}</p>
-                        <p><strong>Followers Requested:</strong> {mission.followers}</p>
-                        <p><strong>Total for this Profile:</strong> {mission.totalFollowersForLink}</p>
-                        <p><strong>Submitted:</strong> {formatDate(mission.timestamp)}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-inter font-semibold mb-4 text-liquid-text">
-                        Mission Status
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-liquid-muted">Ads Watched:</span>
-                          <span className={`px-3 py-1 rounded-full text-sm ${
-                            mission.adsWatched >= Math.floor(mission.followers / 2) 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {mission.adsWatched}/{Math.floor(mission.followers / 2)}
-                          </span>
+              {missions.map((mission, index) => {
+                const completionStatus = getCompletionStatus(mission);
+                const requiredAds = Math.floor(mission.followers / 2);
+                
+                return (
+                  <Card key={index} className="liquid-card border-0 shadow-2xl">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-2xl font-inter font-bold text-liquid-text mb-2">
+                            Mission #{index + 1}
+                          </CardTitle>
+                          <Badge className={`${completionStatus.color} border-0 font-inter font-medium`}>
+                            {completionStatus.text}
+                          </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-liquid-muted">Follow Completed:</span>
-                          <span className={`px-3 py-1 rounded-full text-sm ${
-                            mission.followCompleted 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {mission.followCompleted ? '✓ Yes' : '✗ No'}
-                          </span>
+                        <div className="text-right">
+                          <div className="text-3xl font-black text-transparent bg-clip-text bg-liquid-gradient">
+                            {mission.followers}
+                          </div>
+                          <div className="text-sm text-liquid-muted font-inter">followers</div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <div className="grid md:grid-cols-2 gap-8">
+                        {/* Mission Details */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-inter font-semibold text-liquid-text mb-4 flex items-center">
+                            <div className="w-2 h-2 bg-liquid-primary rounded-full mr-3"></div>
+                            Mission Details
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="bg-liquid-surface/30 rounded-xl p-4">
+                              <div className="text-sm text-liquid-muted font-inter mb-1">TikTok Profile</div>
+                              <div className="text-liquid-text font-inter font-medium break-all">
+                                {mission.tiktokLink}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-liquid-surface/30 rounded-xl p-4">
+                                <div className="text-sm text-liquid-muted font-inter mb-1">Requested</div>
+                                <div className="text-xl font-bold text-liquid-primary">{mission.followers}</div>
+                              </div>
+                              <div className="bg-liquid-surface/30 rounded-xl p-4">
+                                <div className="text-sm text-liquid-muted font-inter mb-1">Profile Total</div>
+                                <div className="text-xl font-bold text-liquid-secondary">{mission.totalFollowersForLink}</div>
+                              </div>
+                            </div>
+                            <div className="bg-liquid-surface/30 rounded-xl p-4">
+                              <div className="text-sm text-liquid-muted font-inter mb-1">Submitted</div>
+                              <div className="text-liquid-text font-inter">{formatDate(mission.timestamp)}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mission Progress */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-inter font-semibold text-liquid-text mb-4 flex items-center">
+                            <div className="w-2 h-2 bg-liquid-secondary rounded-full mr-3"></div>
+                            Mission Progress
+                          </h3>
+                          
+                          {/* Ads Progress */}
+                          <div className="bg-liquid-surface/30 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-liquid-text font-inter font-medium">Ads Watched</span>
+                              <Badge className={`${
+                                mission.adsWatched >= requiredAds 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              } border-0 font-inter`}>
+                                {mission.adsWatched}/{requiredAds}
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-liquid-surface rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-liquid-primary to-liquid-secondary h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min((mission.adsWatched / requiredAds) * 100, 100)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Follow Status */}
+                          <div className="bg-liquid-surface/30 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-liquid-text font-inter font-medium">Follow Status</span>
+                              <Badge className={`${
+                                mission.followCompleted 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              } border-0 font-inter`}>
+                                {mission.followCompleted ? '✓ Completed' : '✗ Pending'}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Overall Progress */}
+                          <div className="bg-gradient-to-r from-liquid-primary/10 to-liquid-secondary/10 rounded-xl p-4 border border-liquid-primary/20">
+                            <div className="text-center">
+                              <div className={`text-2xl font-black ${completionStatus.color.includes('green') ? 'text-green-400' : completionStatus.color.includes('yellow') ? 'text-yellow-400' : 'text-red-400'}`}>
+                                {completionStatus.status === 'completed' ? '🎉' : completionStatus.status === 'partial' ? '⏳' : '⏸️'}
+                              </div>
+                              <div className="text-sm text-liquid-muted font-inter mt-2">
+                                Mission {completionStatus.text}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}
