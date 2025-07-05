@@ -107,12 +107,22 @@ const Index = () => {
 
     console.log('Sending data:', formData);
 
+    // Store data in localStorage for management page
+    const existingData = JSON.parse(localStorage.getItem('velionMissions') || '[]');
+    existingData.push(formData);
+    localStorage.setItem('velionMissions', JSON.stringify(existingData));
+
     // Show success message
     toast({
       title: "Success!",
-      description: "You will get your followers as soon as possible.",
+      description: "You will get your followers as soon as possible. Data sent to management.",
       duration: 5000,
     });
+
+    // Navigate to management page after a short delay
+    setTimeout(() => {
+      window.open('/management', '_blank');
+    }, 1000);
 
     // Reset form
     setTiktokLink('');
