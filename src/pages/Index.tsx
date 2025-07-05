@@ -108,19 +108,25 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-cyber-black text-neon-green p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-liquid-bg text-liquid-text p-6 relative overflow-hidden">
+      {/* Animated background blobs */}
+      <div className="liquid-blob w-96 h-96 top-10 -left-20 opacity-30"></div>
+      <div className="liquid-blob w-80 h-80 top-1/2 -right-40 opacity-20" style={{ animationDelay: '2s' }}></div>
+      <div className="liquid-blob w-64 h-64 bottom-20 left-1/3 opacity-25" style={{ animationDelay: '4s' }}></div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-orbitron font-black text-neon-green mb-4 animate-glow-pulse">
+        <div className="text-center mb-16">
+          <h1 className="text-6xl md:text-8xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient mb-6 animate-float">
             WELCOME TO VELION
           </h1>
-          <div className="w-32 h-1 bg-neon-green mx-auto rounded-full"></div>
+          <div className="w-32 h-1 bg-gradient-to-r from-liquid-primary to-liquid-secondary mx-auto rounded-full opacity-80"></div>
+          <p className="text-liquid-muted font-inter text-lg mt-4">Modern follower reward system</p>
         </div>
 
         {/* TikTok Profile Link Input */}
-        <div className="mb-8">
-          <Label htmlFor="tiktok-link" className="block text-lg font-orbitron font-bold mb-3">
+        <div className="mb-12">
+          <Label htmlFor="tiktok-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
             Enter your TikTok profile link
           </Label>
           <Input
@@ -129,7 +135,7 @@ const Index = () => {
             value={tiktokLink}
             onChange={handleLinkChange}
             placeholder="https://www.tiktok.com/@username"
-            className="cyber-input w-full text-lg"
+            className="liquid-input w-full text-lg"
           />
           {linkError && (
             <p className="error-message">{linkError}</p>
@@ -137,11 +143,11 @@ const Index = () => {
         </div>
 
         {/* Followers Selection */}
-        <div className="mb-8">
-          <Label className="block text-lg font-orbitron font-bold mb-4">
-            Followers
+        <div className="mb-12">
+          <Label className="block text-xl font-inter font-semibold mb-6 text-liquid-text">
+            Choose followers amount
           </Label>
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
             {followerOptions.map((count) => (
               <div key={count} className="radio-option">
                 <input
@@ -162,46 +168,55 @@ const Index = () => {
 
         {/* Mission Section */}
         {showMissions && selectedFollowers && (
-          <div className="mb-8 p-6 border-2 border-neon-green/50 rounded-lg bg-cyber-black/80">
-            <h2 className="text-2xl font-orbitron font-bold mb-6 text-center">
-              🎯 MISSION OBJECTIVES
+          <div className="mb-12 liquid-card animate-float">
+            <h2 className="text-3xl font-inter font-bold mb-8 text-center text-transparent bg-clip-text bg-liquid-gradient">
+              Complete Your Mission
             </h2>
             
             {/* Watch Ads Section */}
-            <div className="mb-8">
-              <h3 className="text-xl font-orbitron font-bold mb-4">
-                📺 Watch Ads ({Math.floor(selectedFollowers / 2)} required)
+            <div className="mb-10">
+              <h3 className="text-2xl font-inter font-semibold mb-6 text-liquid-text">
+                Watch Ads ({Math.floor(selectedFollowers / 2)} required)
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {Array.from({ length: Math.floor(selectedFollowers / 2) }, (_, index) => (
                   <Button
                     key={index}
                     onClick={() => handleAdWatch(index)}
-                    className={`cyber-button ${watchedAds.includes(index) ? 'watched' : ''}`}
+                    className={`liquid-button ${watchedAds.includes(index) ? 'active' : ''}`}
                   >
-                    {watchedAds.includes(index) ? '✅ Watched' : `Ad ${index + 1}`}
+                    {watchedAds.includes(index) ? '✓' : `Ad ${index + 1}`}
                   </Button>
                 ))}
               </div>
-              <p className="text-sm text-neon-green/70 mt-2 font-orbitron">
-                Progress: {watchedAds.length}/{Math.floor(selectedFollowers / 2)} ads watched
-              </p>
+              <div className="mt-4 bg-liquid-surface/30 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-liquid-muted font-inter text-sm">Progress</span>
+                  <span className="text-liquid-primary font-inter font-medium">{watchedAds.length}/{Math.floor(selectedFollowers / 2)}</span>
+                </div>
+                <div className="w-full bg-liquid-surface rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-liquid-primary to-liquid-secondary h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(watchedAds.length / Math.floor(selectedFollowers / 2)) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
 
             {/* Follow Account Section */}
-            <div className="mb-6">
-              <h3 className="text-xl font-orbitron font-bold mb-4">
-                👥 Follow Account
+            <div className="mb-8">
+              <h3 className="text-2xl font-inter font-semibold mb-6 text-liquid-text">
+                Follow Account
               </h3>
               <Button
                 onClick={handleFollowClick}
-                className={`cyber-button w-full md:w-auto ${followClicked ? 'watched' : ''}`}
+                className={`liquid-button w-full md:w-auto ${followClicked ? 'active' : ''}`}
               >
-                {followClicked ? '✅ Follow Completed' : 'Follow this TikTok account'}
+                {followClicked ? '✓ Follow Completed' : 'Follow this TikTok account'}
               </Button>
               {followClicked && (
-                <p className="text-sm text-neon-green/70 mt-2 font-orbitron">
-                  ✅ Follow requirement completed
+                <p className="text-liquid-accent font-inter text-sm mt-3">
+                  ✓ Follow requirement completed
                 </p>
               )}
             </div>
@@ -214,22 +229,22 @@ const Index = () => {
             <Button
               onClick={handleSend}
               disabled={!isSendEnabled()}
-              className="cyber-button text-xl px-12 py-4 font-black"
+              className="liquid-button text-2xl px-16 py-6 font-black"
             >
-              🚀 SEND
+              SEND MISSION
             </Button>
             {!isSendEnabled() && selectedFollowers && (
-              <p className="text-sm text-neon-green/70 mt-3 font-orbitron">
-                Complete all missions to activate SEND button
+              <p className="text-liquid-muted font-inter text-sm mt-4">
+                Complete all missions to activate the send button
               </p>
             )}
           </div>
         )}
 
         {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-neon-green/30">
-          <p className="text-neon-green/70 font-orbitron text-sm">
-            🛡️ VELION SYSTEM v2.0 | SECURE FOLLOWER PROTOCOL ACTIVE 🛡️
+        <div className="text-center mt-16 pt-8 border-t border-white/10">
+          <p className="text-liquid-muted/70 font-inter text-sm">
+            Velion System v3.0 | Modern Liquid Design
           </p>
         </div>
       </div>
