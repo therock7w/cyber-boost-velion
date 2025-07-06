@@ -6,6 +6,8 @@ import { toast } from '@/hooks/use-toast';
 
 // Store total followers requested per TikTok link
 const followerTracker = new Map<string, number>();
+// Store used follower amounts per TikTok link
+const usedFollowerAmounts = new Map<string, Set<number>>();
 
 const Index = () => {
   const [tiktokLink, setTiktokLink] = useState('');
@@ -29,6 +31,12 @@ const Index = () => {
     return currentTotal + newFollowers > 100;
   };
 
+  // Check if this follower amount has already been used for this link
+  const checkDuplicateAmount = (url: string, amount: number): boolean => {
+    const usedAmounts = usedFollowerAmounts.get(url);
+    return usedAmounts ? usedAmounts.has(amount) : false;
+  };
+
   // Handle TikTok link input
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const link = e.target.value;
@@ -36,8 +44,14 @@ const Index = () => {
     
     if (link && !validateTikTokUrl(link)) {
       setLinkError('Please enter a valid TikTok profile URL (e.g., https://www.tiktok.com/@username)');
-    } else if (link && selectedFollowers && checkFollowerLimit(link, selectedFollowers)) {
-      setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+    } else if (link && selectedFollowers) {
+      if (checkFollowerLimit(link, selectedFollowers)) {
+        setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+      } else if (checkDuplicateAmount(link, selectedFollowers)) {
+        setLinkError(`This TikTok profile has already been used with ${selectedFollowers} followers. Please choose a different amount.`);
+      } else {
+        setLinkError('');
+      }
     } else {
       setLinkError('');
     }
@@ -47,18 +61,41 @@ const Index = () => {
   const handleFollowerSelect = (count: number) => {
     setSelectedFollowers(count);
     
-    // Check if this selection would exceed the limit for the current link
-    if (tiktokLink && checkFollowerLimit(tiktokLink, count)) {
-      setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
-      setShowMissions(false);
+    // Check if this selection would exceed the limit or is duplicate for the current link
+    if (tiktokLink) {
+      if (checkFollowerLimit(tiktokLink, count)) {
+        setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+        setShowMissions(false);
+      } else if (checkDuplicateAmount(tiktokLink, count)) {
+        setLinkError(`This TikTok profile has already been used with ${count} followers. Please choose a different amount.`);
+        setShowMissions(false);
+      } else {
+        setLinkError('');
+        setShowMissions(true);
+      }
     } else {
-      setLinkError('');
       setShowMissions(true);
     }
     
     setWatchedAds([]);
     setFollowClicked(false);
   };
+
+  // Load existing data on component mount
+  useEffect(() => {
+    const existingData = JSON.parse(localStorage.getItem('velionMissions') || '[]');
+    
+    // Rebuild tracking maps from existing data
+    existingData.forEach((mission: any) => {
+      const currentTotal = followerTracker.get(mission.tiktokLink) || 0;
+      followerTracker.set(mission.tiktokLink, currentTotal + mission.followers);
+      
+      if (!usedFollowerAmounts.has(mission.tiktokLink)) {
+        usedFollowerAmounts.set(mission.tiktokLink, new Set());
+      }
+      usedFollowerAmounts.get(mission.tiktokLink)!.add(mission.followers);
+    });
+  }, []);
 
   // Handle ad watching
   const handleAdWatch = (adIndex: number) => {
@@ -94,6 +131,12 @@ const Index = () => {
     // Update follower tracker with new total
     const currentTotal = followerTracker.get(tiktokLink) || 0;
     followerTracker.set(tiktokLink, currentTotal + selectedFollowers!);
+
+    // Update used amounts tracker
+    if (!usedFollowerAmounts.has(tiktokLink)) {
+      usedFollowerAmounts.set(tiktokLink, new Set());
+    }
+    usedFollowerAmounts.get(tiktokLink)!.add(selectedFollowers!);
 
     // Create form data to send to management page
     const formData = {
