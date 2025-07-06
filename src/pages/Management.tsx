@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ManagementLogin from '@/components/ManagementLogin';
-import { Search, X } from 'lucide-react';
+import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
   tiktokLink: string;
@@ -75,7 +76,12 @@ const Management = () => {
   };
 
   const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+    try {
+      const date = new Date(timestamp);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      return new Date(timestamp).toLocaleString();
+    }
   };
 
   const getCompletionStatus = (mission: MissionData) => {
@@ -179,120 +185,128 @@ const Management = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-6">
+              <div className="space-y-4">
                 {filteredMissions.map((mission, index) => {
                   const completionStatus = getCompletionStatus(mission);
                   const requiredAds = Math.floor(mission.followers / 2);
                   
                   return (
-                    <Card key={index} className="liquid-card border-0 shadow-2xl">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-start justify-between">
+                    <div key={index} className="bg-gradient-to-r from-liquid-surface/30 to-liquid-surface/10 backdrop-blur-sm border border-liquid-primary/20 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+                      {/* Notification Header */}
+                      <div className="flex items-center justify-between mb-4 pb-4 border-b border-liquid-primary/10">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            completionStatus.status === 'completed' ? 'bg-green-400' : 
+                            completionStatus.status === 'partial' ? 'bg-yellow-400' : 'bg-red-400'
+                          } animate-pulse`}></div>
                           <div>
-                            <CardTitle className="text-2xl font-inter font-bold text-liquid-text mb-2">
+                            <h3 className="text-lg font-inter font-bold text-liquid-text">
                               Mission #{missions.indexOf(mission) + 1}
-                            </CardTitle>
-                            <Badge className={`${completionStatus.color} border-0 font-inter font-medium`}>
-                              {completionStatus.text}
+                            </h3>
+                            <div className="flex items-center gap-2 text-sm text-liquid-muted">
+                              <Clock className="w-4 h-4" />
+                              <span>{formatDate(mission.timestamp)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className={`${completionStatus.color} border-0 font-inter font-medium px-3 py-1`}>
+                          {completionStatus.text}
+                        </Badge>
+                      </div>
+
+                      {/* Mission Content */}
+                      <div className="grid md:grid-cols-3 gap-6">
+                        {/* TikTok Link */}
+                        <div className="md:col-span-2">
+                          <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <TrendingUp className="w-4 h-4 text-liquid-primary" />
+                              <span className="text-sm font-inter font-medium text-liquid-muted">TikTok Profile</span>
+                            </div>
+                            <div className="text-liquid-text font-inter font-medium break-all">
+                              {mission.tiktokLink}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Follower Count */}
+                        <div className="flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-4xl font-black text-transparent bg-clip-text bg-liquid-gradient mb-1">
+                              {mission.followers.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-liquid-muted font-inter">requested followers</div>
+                            <div className="text-xs text-liquid-muted/70 font-inter mt-1">
+                              Profile has {mission.totalFollowersForLink.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Section */}
+                      <div className="mt-6 grid md:grid-cols-2 gap-4">
+                        {/* Ads Progress */}
+                        <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Eye className="w-4 h-4 text-liquid-secondary" />
+                              <span className="text-sm font-inter font-medium text-liquid-text">Ads Watched</span>
+                            </div>
+                            <Badge className={`${
+                              mission.adsWatched >= requiredAds 
+                                ? 'bg-green-500/20 text-green-400' 
+                                : 'bg-red-500/20 text-red-400'
+                            } border-0 font-inter text-xs px-2 py-1`}>
+                              {mission.adsWatched}/{requiredAds}
                             </Badge>
                           </div>
-                          <div className="text-right">
-                            <div className="text-3xl font-black text-transparent bg-clip-text bg-liquid-gradient">
-                              {mission.followers}
-                            </div>
-                            <div className="text-sm text-liquid-muted font-inter">followers</div>
+                          <div className="w-full bg-liquid-surface/50 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-liquid-primary to-liquid-secondary h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min((mission.adsWatched / requiredAds) * 100, 100)}%` }}
+                            ></div>
                           </div>
                         </div>
-                      </CardHeader>
-                      
-                      <CardContent className="pt-0">
-                        <div className="grid md:grid-cols-2 gap-8">
-                          {/* Mission Details */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-inter font-semibold text-liquid-text mb-4 flex items-center">
-                              <div className="w-2 h-2 bg-liquid-primary rounded-full mr-3"></div>
-                              Mission Details
-                            </h3>
-                            <div className="space-y-3">
-                              <div className="bg-liquid-surface/30 rounded-xl p-4">
-                                <div className="text-sm text-liquid-muted font-inter mb-1">TikTok Profile</div>
-                                <div className="text-liquid-text font-inter font-medium break-all">
-                                  {mission.tiktokLink}
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-liquid-surface/30 rounded-xl p-4">
-                                  <div className="text-sm text-liquid-muted font-inter mb-1">Requested</div>
-                                  <div className="text-xl font-bold text-liquid-primary">{mission.followers}</div>
-                                </div>
-                                <div className="bg-liquid-surface/30 rounded-xl p-4">
-                                  <div className="text-sm text-liquid-muted font-inter mb-1">Profile Total</div>
-                                  <div className="text-xl font-bold text-liquid-secondary">{mission.totalFollowersForLink}</div>
-                                </div>
-                              </div>
-                              <div className="bg-liquid-surface/30 rounded-xl p-4">
-                                <div className="text-sm text-liquid-muted font-inter mb-1">Submitted</div>
-                                <div className="text-liquid-text font-inter">{formatDate(mission.timestamp)}</div>
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* Mission Progress */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-inter font-semibold text-liquid-text mb-4 flex items-center">
-                              <div className="w-2 h-2 bg-liquid-secondary rounded-full mr-3"></div>
-                              Mission Progress
-                            </h3>
-                            
-                            {/* Ads Progress */}
-                            <div className="bg-liquid-surface/30 rounded-xl p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <span className="text-liquid-text font-inter font-medium">Ads Watched</span>
-                                <Badge className={`${
-                                  mission.adsWatched >= requiredAds 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-red-500/20 text-red-400'
-                                } border-0 font-inter`}>
-                                  {mission.adsWatched}/{requiredAds}
-                                </Badge>
-                              </div>
-                              <div className="w-full bg-liquid-surface rounded-full h-2">
-                                <div 
-                                  className="bg-gradient-to-r from-liquid-primary to-liquid-secondary h-2 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min((mission.adsWatched / requiredAds) * 100, 100)}%` }}
-                                ></div>
-                              </div>
+                        {/* Follow Status */}
+                        <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-liquid-primary" />
+                              <span className="text-sm font-inter font-medium text-liquid-text">Follow Status</span>
                             </div>
-
-                            {/* Follow Status */}
-                            <div className="bg-liquid-surface/30 rounded-xl p-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-liquid-text font-inter font-medium">Follow Status</span>
-                                <Badge className={`${
-                                  mission.followCompleted 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-red-500/20 text-red-400'
-                                } border-0 font-inter`}>
-                                  {mission.followCompleted ? '✓ Completed' : '✗ Pending'}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {/* Overall Progress */}
-                            <div className="bg-gradient-to-r from-liquid-primary/10 to-liquid-secondary/10 rounded-xl p-4 border border-liquid-primary/20">
-                              <div className="text-center">
-                                <div className={`text-2xl font-black ${completionStatus.color.includes('green') ? 'text-green-400' : completionStatus.color.includes('yellow') ? 'text-yellow-400' : 'text-red-400'}`}>
-                                  {completionStatus.status === 'completed' ? '🎉' : completionStatus.status === 'partial' ? '⏳' : '⏸️'}
-                                </div>
-                                <div className="text-sm text-liquid-muted font-inter mt-2">
-                                  Mission {completionStatus.text}
-                                </div>
-                              </div>
-                            </div>
+                            <Badge className={`${
+                              mission.followCompleted 
+                                ? 'bg-green-500/20 text-green-400' 
+                                : 'bg-red-500/20 text-red-400'
+                            } border-0 font-inter text-xs px-2 py-1`}>
+                              {mission.followCompleted ? '✓ Completed' : '✗ Pending'}
+                            </Badge>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+
+                      {/* Status Indicator */}
+                      <div className="mt-4 text-center">
+                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+                          completionStatus.status === 'completed' 
+                            ? 'bg-green-500/10 border border-green-500/20' 
+                            : completionStatus.status === 'partial' 
+                            ? 'bg-yellow-500/10 border border-yellow-500/20' 
+                            : 'bg-red-500/10 border border-red-500/20'
+                        }`}>
+                          <span className="text-2xl">
+                            {completionStatus.status === 'completed' ? '🎉' : completionStatus.status === 'partial' ? '⏳' : '⏸️'}
+                          </span>
+                          <span className={`text-sm font-inter font-medium ${
+                            completionStatus.status === 'completed' ? 'text-green-400' : 
+                            completionStatus.status === 'partial' ? 'text-yellow-400' : 'text-red-400'
+                          }`}>
+                            Mission {completionStatus.text}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
