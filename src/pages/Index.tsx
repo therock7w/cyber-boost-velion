@@ -157,15 +157,10 @@ const Index = () => {
 
     // Show success message
     toast({
-      title: "Success!",
-      description: "You will get your followers as soon as possible. Data sent to management.",
+      title: "Mission Completed!",
+      description: "Your mission has been submitted successfully. You will receive your followers soon!",
       duration: 5000,
     });
-
-    // Navigate to management page after a short delay
-    setTimeout(() => {
-      window.open('/management', '_blank');
-    }, 1000);
 
     // Reset form
     setTiktokLink('');
