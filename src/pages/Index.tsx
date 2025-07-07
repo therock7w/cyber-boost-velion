@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Instagram, Youtube } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Store total followers requested per social media link
 const followerTracker = new Map<string, number>();
@@ -21,6 +21,7 @@ const Index = () => {
   const [followClicked, setFollowClicked] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [showMissions, setShowMissions] = useState(false);
+  const [showFollowDialog, setShowFollowDialog] = useState(false);
 
   const followerOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
@@ -29,24 +30,27 @@ const Index = () => {
     tiktok: {
       name: 'TikTok',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
         </svg>
       ),
       placeholder: 'https://www.tiktok.com/@username',
-      regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i
+      regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i,
+      followUrl: 'https://www.tiktok.com/@dannycross443'
     },
     instagram: {
       name: 'Instagram',
-      icon: <Instagram className="w-6 h-6" />,
+      icon: <Instagram className="w-8 h-8" />,
       placeholder: 'https://www.instagram.com/username',
-      regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i
+      regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i,
+      followUrl: 'https://www.instagram.com/imdannyc4u/'
     },
     youtube: {
       name: 'YouTube',
-      icon: <Youtube className="w-6 h-6" />,
+      icon: <Youtube className="w-8 h-8" />,
       placeholder: 'https://www.youtube.com/@username',
-      regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i
+      regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i,
+      followUrl: 'https://www.youtube.com/@Dannycross_1'
     }
   };
 
@@ -145,20 +149,12 @@ const Index = () => {
 
   // Handle follow button click
   const handleFollowClick = () => {
-    // Open dummy social media page based on platform
-    const dummyUrls = {
-      tiktok: 'https://www.tiktok.com/@example_account',
-      instagram: 'https://www.instagram.com/example_account',
-      youtube: 'https://www.youtube.com/@example_account'
-    };
-    
-    window.open(dummyUrls[selectedPlatform], '_blank');
+    // Open the specific account URL for the selected platform
+    window.open(platformConfigs[selectedPlatform].followUrl, '_blank');
     setFollowClicked(true);
     
-    // Show popup message
-    setTimeout(() => {
-      alert('Please make sure you have followed the account. If you haven\'t or if you unfollow, you will not receive any followers.');
-    }, 1000);
+    // Show the styled popup dialog
+    setShowFollowDialog(true);
   };
 
   // Check if send button should be enabled
@@ -239,19 +235,18 @@ const Index = () => {
           <Label className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
             Choose Platform
           </Label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
             {Object.entries(platformConfigs).map(([key, config]) => (
               <button
                 key={key}
                 onClick={() => handlePlatformSelect(key as Platform)}
-                className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${
+                className={`flex items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${
                   selectedPlatform === key
                     ? 'bg-gradient-to-r from-liquid-primary to-liquid-secondary text-white border-liquid-primary/50 shadow-lg'
                     : 'bg-liquid-surface/50 text-liquid-text border-white/10 hover:border-liquid-primary/30'
                 }`}
               >
                 {config.icon}
-                <span className="font-inter font-medium">{config.name}</span>
               </button>
             ))}
           </div>
@@ -381,6 +376,38 @@ const Index = () => {
           </p>
         </div>
       </div>
+
+      {/* Follow Account Dialog */}
+      <Dialog open={showFollowDialog} onOpenChange={setShowFollowDialog}>
+        <DialogContent className="max-w-md mx-auto bg-liquid-surface/95 backdrop-blur-lg border border-white/20 rounded-3xl text-liquid-text">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-inter font-bold text-center text-transparent bg-clip-text bg-liquid-gradient mb-4">
+              Important Notice
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-liquid-primary to-liquid-secondary flex items-center justify-center">
+                {platformConfigs[selectedPlatform].icon}
+              </div>
+            </div>
+            <p className="text-center font-inter text-lg leading-relaxed">
+              Please make sure you have <span className="font-bold text-liquid-primary">followed the account</span> on {platformConfigs[selectedPlatform].name}.
+            </p>
+            <p className="text-center font-inter text-sm text-liquid-muted">
+              If you haven't followed or if you unfollow later, you will <span className="font-semibold text-red-400">not receive any followers</span>.
+            </p>
+            <div className="pt-4">
+              <Button 
+                onClick={() => setShowFollowDialog(false)}
+                className="liquid-button w-full"
+              >
+                I understand
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
