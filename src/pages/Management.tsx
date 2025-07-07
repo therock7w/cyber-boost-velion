@@ -4,11 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ManagementLogin from '@/components/ManagementLogin';
-import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar } from 'lucide-react';
+import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
-  tiktokLink: string;
+  socialLink?: string; // New field
+  tiktokLink?: string; // Legacy field for backward compatibility
+  platform?: 'tiktok' | 'instagram' | 'youtube'; // New field
   followers: number;
   adsWatched: number;
   followCompleted: boolean;
@@ -47,12 +49,39 @@ const Management = () => {
     if (!searchQuery.trim()) {
       setFilteredMissions(missions);
     } else {
-      const filtered = missions.filter(mission =>
-        mission.tiktokLink.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filtered = missions.filter(mission => {
+        const link = mission.socialLink || mission.tiktokLink || '';
+        return link.toLowerCase().includes(searchQuery.toLowerCase());
+      });
       setFilteredMissions(filtered);
     }
   }, [searchQuery, missions]);
+
+  // Platform configurations
+  const platformConfigs = {
+    tiktok: {
+      name: 'TikTok',
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+        </svg>
+      ),
+      followUrl: 'https://www.tiktok.com/@dannycross443',
+      color: 'text-pink-400 bg-pink-500/20'
+    },
+    instagram: {
+      name: 'Instagram',
+      icon: <Instagram className="w-5 h-5" />,
+      followUrl: 'https://www.instagram.com/imdannyc4u/',
+      color: 'text-purple-400 bg-purple-500/20'
+    },
+    youtube: {
+      name: 'YouTube',
+      icon: <Youtube className="w-5 h-5" />,
+      followUrl: 'https://www.youtube.com/@Dannycross_1',
+      color: 'text-red-400 bg-red-500/20'
+    }
+  };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -105,6 +134,7 @@ const Management = () => {
       <div className="liquid-blob w-80 h-80 top-1/2 -right-40 opacity-15" style={{ animationDelay: '3s' }}></div>
       
       <div className="max-w-6xl mx-auto relative z-10">
+        {/* Header Section */}
         <div className="text-center mb-12">
           <div className="flex justify-between items-center mb-6">
             <div></div>
@@ -122,6 +152,7 @@ const Management = () => {
         </div>
 
         {missions.length === 0 ? (
+          // No Missions Display
           <div className="liquid-card text-center">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-liquid-primary to-liquid-secondary rounded-full flex items-center justify-center">
               <span className="text-4xl">📊</span>
@@ -135,6 +166,7 @@ const Management = () => {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Search and Filter Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
               <div>
                 <h2 className="text-3xl font-inter font-bold text-transparent bg-clip-text bg-liquid-gradient mb-2">
@@ -146,12 +178,11 @@ const Management = () => {
               </div>
               
               <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                {/* Search Input */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-liquid-muted w-4 h-4" />
                   <Input
                     type="text"
-                    placeholder="Search by TikTok link..."
+                    placeholder="Search by profile link..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="liquid-input pl-10 pr-10 w-full md:w-80"
@@ -173,6 +204,7 @@ const Management = () => {
             </div>
 
             {filteredMissions.length === 0 && searchQuery ? (
+              // No Results Display
               <div className="liquid-card text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-liquid-primary to-liquid-secondary rounded-full flex items-center justify-center">
                   <Search className="w-8 h-8 text-white" />
@@ -189,10 +221,13 @@ const Management = () => {
                 {filteredMissions.map((mission, index) => {
                   const completionStatus = getCompletionStatus(mission);
                   const requiredAds = Math.floor(mission.followers / 2);
+                  const platform = mission.platform || 'tiktok'; // Default to tiktok for backward compatibility
+                  const platformConfig = platformConfigs[platform];
+                  const profileLink = mission.socialLink || mission.tiktokLink || '';
                   
                   return (
                     <div key={index} className="bg-gradient-to-r from-liquid-surface/30 to-liquid-surface/10 backdrop-blur-sm border border-liquid-primary/20 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-                      {/* Notification Header */}
+                      {/* Mission Header */}
                       <div className="flex items-center justify-between mb-4 pb-4 border-b border-liquid-primary/10">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
@@ -216,16 +251,46 @@ const Management = () => {
 
                       {/* Mission Content */}
                       <div className="grid md:grid-cols-3 gap-6">
-                        {/* TikTok Link */}
-                        <div className="md:col-span-2">
+                        {/* Platform & Profile Link */}
+                        <div className="md:col-span-2 space-y-4">
+                          {/* Platform Info */}
+                          <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`p-2 rounded-full ${platformConfig.color}`}>
+                                {platformConfig.icon}
+                              </div>
+                              <span className="text-sm font-inter font-medium text-liquid-muted">Platform</span>
+                            </div>
+                            <div className="text-liquid-text font-inter font-medium">
+                              {platformConfig.name}
+                            </div>
+                          </div>
+
+                          {/* Profile Link */}
                           <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className="w-4 h-4 text-liquid-primary" />
-                              <span className="text-sm font-inter font-medium text-liquid-muted">TikTok Profile</span>
+                              <span className="text-sm font-inter font-medium text-liquid-muted">{platformConfig.name} Profile</span>
                             </div>
-                            <div className="text-liquid-text font-inter font-medium break-all">
-                              {mission.tiktokLink}
+                            <div className="text-liquid-text font-inter font-medium break-all text-sm">
+                              {profileLink}
                             </div>
+                          </div>
+
+                          {/* Follow Account Link */}
+                          <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <UserCheck className="w-4 h-4 text-liquid-secondary" />
+                              <span className="text-sm font-inter font-medium text-liquid-muted">Follow Account Link</span>
+                            </div>
+                            <a 
+                              href={platformConfig.followUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-liquid-primary hover:text-liquid-secondary font-inter font-medium break-all text-sm transition-colors"
+                            >
+                              {platformConfig.followUrl}
+                            </a>
                           </div>
                         </div>
 
@@ -245,7 +310,6 @@ const Management = () => {
 
                       {/* Progress Section */}
                       <div className="mt-6 grid md:grid-cols-2 gap-4">
-                        {/* Ads Progress */}
                         <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
@@ -268,7 +332,6 @@ const Management = () => {
                           </div>
                         </div>
 
-                        {/* Follow Status */}
                         <div className="bg-liquid-surface/20 rounded-lg p-4 border border-liquid-primary/10">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
