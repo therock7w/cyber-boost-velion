@@ -1,16 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { Instagram, Youtube } from 'lucide-react';
 
-// Store total followers requested per TikTok link
+// Store total followers requested per social media link
 const followerTracker = new Map<string, number>();
-// Store used follower amounts per TikTok link
+// Store used follower amounts per social media link
 const usedFollowerAmounts = new Map<string, Set<number>>();
 
+type Platform = 'tiktok' | 'instagram' | 'youtube';
+
 const Index = () => {
-  const [tiktokLink, setTiktokLink] = useState('');
+  const [socialLink, setSocialLink] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>('tiktok');
   const [selectedFollowers, setSelectedFollowers] = useState<number | null>(null);
   const [watchedAds, setWatchedAds] = useState<number[]>([]);
   const [followClicked, setFollowClicked] = useState(false);
@@ -19,10 +24,35 @@ const Index = () => {
 
   const followerOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
-  // Validate TikTok URL
-  const validateTikTokUrl = (url: string): boolean => {
-    const tiktokRegex = /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i;
-    return tiktokRegex.test(url);
+  // Platform configurations
+  const platformConfigs = {
+    tiktok: {
+      name: 'TikTok',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+        </svg>
+      ),
+      placeholder: 'https://www.tiktok.com/@username',
+      regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i
+    },
+    instagram: {
+      name: 'Instagram',
+      icon: <Instagram className="w-6 h-6" />,
+      placeholder: 'https://www.instagram.com/username',
+      regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i
+    },
+    youtube: {
+      name: 'YouTube',
+      icon: <Youtube className="w-6 h-6" />,
+      placeholder: 'https://www.youtube.com/@username',
+      regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i
+    }
+  };
+
+  // Validate social media URL based on selected platform
+  const validateSocialUrl = (url: string, platform: Platform): boolean => {
+    return platformConfigs[platform].regex.test(url);
   };
 
   // Check if adding selected followers would exceed 100 total for this link
@@ -37,18 +67,18 @@ const Index = () => {
     return usedAmounts ? usedAmounts.has(amount) : false;
   };
 
-  // Handle TikTok link input
+  // Handle social media link input
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const link = e.target.value;
-    setTiktokLink(link);
+    setSocialLink(link);
     
-    if (link && !validateTikTokUrl(link)) {
-      setLinkError('Please enter a valid TikTok profile URL (e.g., https://www.tiktok.com/@username)');
+    if (link && !validateSocialUrl(link, selectedPlatform)) {
+      setLinkError(`Please enter a valid ${platformConfigs[selectedPlatform].name} profile URL (e.g., ${platformConfigs[selectedPlatform].placeholder})`);
     } else if (link && selectedFollowers) {
       if (checkFollowerLimit(link, selectedFollowers)) {
-        setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and cannot be used again.`);
       } else if (checkDuplicateAmount(link, selectedFollowers)) {
-        setLinkError(`This TikTok profile has already been used with ${selectedFollowers} followers. Please choose a different amount.`);
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${selectedFollowers} followers. Please choose a different amount.`);
       } else {
         setLinkError('');
       }
@@ -57,17 +87,25 @@ const Index = () => {
     }
   };
 
+  // Handle platform selection
+  const handlePlatformSelect = (platform: Platform) => {
+    setSelectedPlatform(platform);
+    setSocialLink('');
+    setLinkError('');
+    setShowMissions(false);
+  };
+
   // Handle follower selection
   const handleFollowerSelect = (count: number) => {
     setSelectedFollowers(count);
     
     // Check if this selection would exceed the limit or is duplicate for the current link
-    if (tiktokLink) {
-      if (checkFollowerLimit(tiktokLink, count)) {
-        setLinkError('This TikTok profile has already received 100 followers and cannot be used again.');
+    if (socialLink) {
+      if (checkFollowerLimit(socialLink, count)) {
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and cannot be used again.`);
         setShowMissions(false);
-      } else if (checkDuplicateAmount(tiktokLink, count)) {
-        setLinkError(`This TikTok profile has already been used with ${count} followers. Please choose a different amount.`);
+      } else if (checkDuplicateAmount(socialLink, count)) {
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${count} followers. Please choose a different amount.`);
         setShowMissions(false);
       } else {
         setLinkError('');
@@ -87,13 +125,14 @@ const Index = () => {
     
     // Rebuild tracking maps from existing data
     existingData.forEach((mission: any) => {
-      const currentTotal = followerTracker.get(mission.tiktokLink) || 0;
-      followerTracker.set(mission.tiktokLink, currentTotal + mission.followers);
+      const currentTotal = followerTracker.get(mission.socialLink || mission.tiktokLink) || 0;
+      followerTracker.set(mission.socialLink || mission.tiktokLink, currentTotal + mission.followers);
       
-      if (!usedFollowerAmounts.has(mission.tiktokLink)) {
-        usedFollowerAmounts.set(mission.tiktokLink, new Set());
+      const linkKey = mission.socialLink || mission.tiktokLink;
+      if (!usedFollowerAmounts.has(linkKey)) {
+        usedFollowerAmounts.set(linkKey, new Set());
       }
-      usedFollowerAmounts.get(mission.tiktokLink)!.add(mission.followers);
+      usedFollowerAmounts.get(linkKey)!.add(mission.followers);
     });
   }, []);
 
@@ -106,8 +145,14 @@ const Index = () => {
 
   // Handle follow button click
   const handleFollowClick = () => {
-    // Open dummy TikTok page
-    window.open('https://www.tiktok.com/@example_account', '_blank');
+    // Open dummy social media page based on platform
+    const dummyUrls = {
+      tiktok: 'https://www.tiktok.com/@example_account',
+      instagram: 'https://www.instagram.com/example_account',
+      youtube: 'https://www.youtube.com/@example_account'
+    };
+    
+    window.open(dummyUrls[selectedPlatform], '_blank');
     setFollowClicked(true);
     
     // Show popup message
@@ -118,7 +163,7 @@ const Index = () => {
 
   // Check if send button should be enabled
   const isSendEnabled = () => {
-    if (!selectedFollowers || !tiktokLink || linkError) return false;
+    if (!selectedFollowers || !socialLink || linkError) return false;
     
     const requiredAds = Math.floor(selectedFollowers / 2);
     return watchedAds.length >= requiredAds && followClicked;
@@ -129,23 +174,24 @@ const Index = () => {
     if (!isSendEnabled()) return;
 
     // Update follower tracker with new total
-    const currentTotal = followerTracker.get(tiktokLink) || 0;
-    followerTracker.set(tiktokLink, currentTotal + selectedFollowers!);
+    const currentTotal = followerTracker.get(socialLink) || 0;
+    followerTracker.set(socialLink, currentTotal + selectedFollowers!);
 
     // Update used amounts tracker
-    if (!usedFollowerAmounts.has(tiktokLink)) {
-      usedFollowerAmounts.set(tiktokLink, new Set());
+    if (!usedFollowerAmounts.has(socialLink)) {
+      usedFollowerAmounts.set(socialLink, new Set());
     }
-    usedFollowerAmounts.get(tiktokLink)!.add(selectedFollowers!);
+    usedFollowerAmounts.get(socialLink)!.add(selectedFollowers!);
 
     // Create form data to send to management page
     const formData = {
-      tiktokLink,
+      socialLink,
+      platform: selectedPlatform,
       followers: selectedFollowers,
       adsWatched: watchedAds.length,
       followCompleted: followClicked,
       timestamp: new Date().toISOString(),
-      totalFollowersForLink: followerTracker.get(tiktokLink)
+      totalFollowersForLink: followerTracker.get(socialLink)
     };
 
     console.log('Sending data:', formData);
@@ -163,7 +209,7 @@ const Index = () => {
     });
 
     // Reset form
-    setTiktokLink('');
+    setSocialLink('');
     setSelectedFollowers(null);
     setWatchedAds([]);
     setFollowClicked(false);
@@ -188,17 +234,40 @@ const Index = () => {
           <p className="text-liquid-muted font-inter text-lg mt-4">Modern follower reward system</p>
         </div>
 
-        {/* TikTok Profile Link Input */}
+        {/* Platform Selection */}
+        <div className="mb-8">
+          <Label className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
+            Choose Platform
+          </Label>
+          <div className="grid grid-cols-3 gap-4">
+            {Object.entries(platformConfigs).map(([key, config]) => (
+              <button
+                key={key}
+                onClick={() => handlePlatformSelect(key as Platform)}
+                className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${
+                  selectedPlatform === key
+                    ? 'bg-gradient-to-r from-liquid-primary to-liquid-secondary text-white border-liquid-primary/50 shadow-lg'
+                    : 'bg-liquid-surface/50 text-liquid-text border-white/10 hover:border-liquid-primary/30'
+                }`}
+              >
+                {config.icon}
+                <span className="font-inter font-medium">{config.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Social Media Profile Link Input */}
         <div className="mb-12">
-          <Label htmlFor="tiktok-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
-            Enter your TikTok profile link
+          <Label htmlFor="social-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
+            Enter your {platformConfigs[selectedPlatform].name} profile link
           </Label>
           <Input
-            id="tiktok-link"
+            id="social-link"
             type="url"
-            value={tiktokLink}
+            value={socialLink}
             onChange={handleLinkChange}
-            placeholder="https://www.tiktok.com/@username"
+            placeholder={platformConfigs[selectedPlatform].placeholder}
             className="liquid-input w-full text-lg"
           />
           {linkError && (
@@ -276,7 +345,7 @@ const Index = () => {
                 onClick={handleFollowClick}
                 className={`liquid-button w-full md:w-auto ${followClicked ? 'active' : ''}`}
               >
-                {followClicked ? '✓ Follow Completed' : 'Follow this TikTok account'}
+                {followClicked ? '✓ Follow Completed' : `Follow this ${platformConfigs[selectedPlatform].name} account`}
               </Button>
               {followClicked && (
                 <p className="text-liquid-accent font-inter text-sm mt-3">
