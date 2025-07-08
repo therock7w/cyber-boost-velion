@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink } from 'lucide-react';
+import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink, Settings, Save } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
@@ -17,10 +17,22 @@ interface MissionData {
   totalFollowersForLink: number;
 }
 
+interface PlatformLinks {
+  tiktok: string;
+  instagram: string;
+  youtube: string;
+}
+
 const Management = () => {
   const [missions, setMissions] = useState<MissionData[]>([]);
   const [filteredMissions, setFilteredMissions] = useState<MissionData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [platformLinks, setPlatformLinks] = useState<PlatformLinks>({
+    tiktok: 'https://www.tiktok.com/@dannycross443',
+    instagram: 'https://www.instagram.com/imdannyc4u/',
+    youtube: 'https://www.youtube.com/@Dannycross_1'
+  });
 
   useEffect(() => {
     // Load mission data from localStorage
@@ -29,6 +41,12 @@ const Management = () => {
       const missionData = JSON.parse(storedData);
       setMissions(missionData);
       setFilteredMissions(missionData);
+    }
+
+    // Load platform links from localStorage
+    const storedLinks = localStorage.getItem('velionPlatformLinks');
+    if (storedLinks) {
+      setPlatformLinks(JSON.parse(storedLinks));
     }
   }, []);
 
@@ -45,7 +63,7 @@ const Management = () => {
     }
   }, [searchQuery, missions]);
 
-  // Platform configurations
+  // Platform configurations - now using dynamic links
   const platformConfigs = {
     tiktok: {
       name: 'TikTok',
@@ -54,7 +72,7 @@ const Management = () => {
           <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
         </svg>
       ),
-      followUrl: 'https://www.tiktok.com/@dannycross443',
+      followUrl: platformLinks.tiktok,
       color: 'text-pink-400 bg-pink-500/20',
       bgColor: 'bg-pink-500/10',
       borderColor: 'border-pink-500/30'
@@ -62,7 +80,7 @@ const Management = () => {
     instagram: {
       name: 'Instagram',
       icon: <Instagram className="w-5 h-5" />,
-      followUrl: 'https://www.instagram.com/imdannyc4u/',
+      followUrl: platformLinks.instagram,
       color: 'text-purple-400 bg-purple-500/20',
       bgColor: 'bg-purple-500/10',
       borderColor: 'border-purple-500/30'
@@ -70,11 +88,18 @@ const Management = () => {
     youtube: {
       name: 'YouTube',
       icon: <Youtube className="w-5 h-5" />,
-      followUrl: 'https://www.youtube.com/@Dannycross_1',
+      followUrl: platformLinks.youtube,
       color: 'text-red-400 bg-red-500/20',
       bgColor: 'bg-red-500/10',
       borderColor: 'border-red-500/30'
     }
+  };
+
+  const savePlatformLinks = () => {
+    localStorage.setItem('velionPlatformLinks', JSON.stringify(platformLinks));
+    setShowSettings(false);
+    // Show success message
+    alert('Platform links updated successfully!');
   };
 
   const clearAllData = () => {
@@ -117,14 +142,116 @@ const Management = () => {
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient animate-float mb-6">
-            VELION MANAGEMENT
-          </h1>
+          <div className="flex justify-between items-center mb-6">
+            <div></div>
+            <h1 className="text-5xl md:text-7xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient animate-float">
+              VELION MANAGEMENT
+            </h1>
+            <Button 
+              onClick={() => setShowSettings(!showSettings)} 
+              className="liquid-button bg-blue-500/20 border-blue-400 text-blue-400 hover:bg-blue-500/30"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
           <div className="w-32 h-1 bg-gradient-to-r from-liquid-primary to-liquid-secondary mx-auto rounded-full opacity-80 mb-4"></div>
           <p className="text-xl font-inter text-liquid-muted">
             Mission Control Center
           </p>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="liquid-card mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Settings className="w-6 h-6 text-liquid-primary" />
+              <h2 className="text-2xl font-inter font-bold text-transparent bg-clip-text bg-liquid-gradient">
+                Platform Settings
+              </h2>
+            </div>
+            
+            <div className="space-y-6">
+              <p className="text-liquid-muted font-inter">
+                Configure the follow account links for each platform:
+              </p>
+              
+              <div className="grid md:grid-cols-1 gap-6">
+                {/* TikTok Settings */}
+                <div className="bg-liquid-surface/20 rounded-lg p-4 border border-pink-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-full bg-pink-500/20 text-pink-400">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-inter font-semibold text-liquid-text">TikTok Follow Link</h3>
+                      <p className="text-sm text-liquid-muted">Link users will follow for TikTok missions</p>
+                    </div>
+                  </div>
+                  <Input
+                    type="url"
+                    value={platformLinks.tiktok}
+                    onChange={(e) => setPlatformLinks(prev => ({ ...prev, tiktok: e.target.value }))}
+                    placeholder="https://www.tiktok.com/@username"
+                    className="liquid-input"
+                  />
+                </div>
+
+                {/* Instagram Settings */}
+                <div className="bg-liquid-surface/20 rounded-lg p-4 border border-purple-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-full bg-purple-500/20 text-purple-400">
+                      <Instagram className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-inter font-semibold text-liquid-text">Instagram Follow Link</h3>
+                      <p className="text-sm text-liquid-muted">Link users will follow for Instagram missions</p>
+                    </div>
+                  </div>
+                  <Input
+                    type="url"
+                    value={platformLinks.instagram}
+                    onChange={(e) => setPlatformLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                    placeholder="https://www.instagram.com/username/"
+                    className="liquid-input"
+                  />
+                </div>
+
+                {/* YouTube Settings */}
+                <div className="bg-liquid-surface/20 rounded-lg p-4 border border-red-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-full bg-red-500/20 text-red-400">
+                      <Youtube className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-inter font-semibold text-liquid-text">YouTube Follow Link</h3>
+                      <p className="text-sm text-liquid-muted">Link users will follow for YouTube missions</p>
+                    </div>
+                  </div>
+                  <Input
+                    type="url"
+                    value={platformLinks.youtube}
+                    onChange={(e) => setPlatformLinks(prev => ({ ...prev, youtube: e.target.value }))}
+                    placeholder="https://www.youtube.com/@username"
+                    className="liquid-input"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button onClick={savePlatformLinks} className="liquid-button bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </Button>
+                <Button onClick={() => setShowSettings(false)} variant="outline" className="liquid-button">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {missions.length === 0 ? (
           // No Missions Display
