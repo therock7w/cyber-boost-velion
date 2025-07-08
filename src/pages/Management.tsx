@@ -3,14 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ManagementLogin from '@/components/ManagementLogin';
 import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
-  socialLink?: string; // New field
-  tiktokLink?: string; // Legacy field for backward compatibility
-  platform?: 'tiktok' | 'instagram' | 'youtube'; // New field
+  socialLink?: string;
+  tiktokLink?: string;
+  platform?: 'tiktok' | 'instagram' | 'youtube';
   followers: number;
   adsWatched: number;
   followCompleted: boolean;
@@ -22,27 +21,16 @@ const Management = () => {
   const [missions, setMissions] = useState<MissionData[]>([]);
   const [filteredMissions, setFilteredMissions] = useState<MissionData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const authStatus = localStorage.getItem('velionManagementAuth');
-    if (authStatus === 'authenticated') {
-      setIsAuthenticated(true);
+    // Load mission data from localStorage
+    const storedData = localStorage.getItem('velionMissions');
+    if (storedData) {
+      const missionData = JSON.parse(storedData);
+      setMissions(missionData);
+      setFilteredMissions(missionData);
     }
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Load mission data from localStorage
-      const storedData = localStorage.getItem('velionMissions');
-      if (storedData) {
-        const missionData = JSON.parse(storedData);
-        setMissions(missionData);
-        setFilteredMissions(missionData);
-      }
-    }
-  }, [isAuthenticated]);
 
   useEffect(() => {
     // Filter missions based on search query
@@ -89,15 +77,6 @@ const Management = () => {
     }
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('velionManagementAuth');
-    setIsAuthenticated(false);
-  };
-
   const clearAllData = () => {
     if (window.confirm('Are you sure you want to clear all mission data? This action cannot be undone.')) {
       localStorage.removeItem('velionMissions');
@@ -129,10 +108,6 @@ const Management = () => {
     return { status: 'pending', text: 'Pending', color: 'bg-red-500/20 text-red-400' };
   };
 
-  if (!isAuthenticated) {
-    return <ManagementLogin onLogin={handleLogin} />;
-  }
-
   return (
     <div className="min-h-screen bg-liquid-bg text-liquid-text p-6 relative overflow-hidden">
       {/* Animated background blobs */}
@@ -142,15 +117,9 @@ const Management = () => {
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <div></div>
-            <h1 className="text-5xl md:text-7xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient animate-float">
-              VELION MANAGEMENT
-            </h1>
-            <Button onClick={handleLogout} variant="outline" className="bg-red-500/20 border-red-400 text-red-400 hover:bg-red-500/30">
-              Logout
-            </Button>
-          </div>
+          <h1 className="text-5xl md:text-7xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient animate-float mb-6">
+            VELION MANAGEMENT
+          </h1>
           <div className="w-32 h-1 bg-gradient-to-r from-liquid-primary to-liquid-secondary mx-auto rounded-full opacity-80 mb-4"></div>
           <p className="text-xl font-inter text-liquid-muted">
             Mission Control Center
