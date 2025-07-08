@@ -25,7 +25,16 @@ const Index = () => {
 
   const followerOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
-  // Platform configurations
+  // Platform configurations - get URLs from localStorage or use defaults
+  const getFollowUrls = () => {
+    const saved = localStorage.getItem('velionFollowUrls');
+    return saved ? JSON.parse(saved) : {
+      tiktok: 'https://www.tiktok.com/@dannycross443',
+      instagram: 'https://www.instagram.com/imdannyc4u/',
+      youtube: 'https://www.youtube.com/@Dannycross_1'
+    };
+  };
+
   const platformConfigs = {
     tiktok: {
       name: 'TikTok',
@@ -36,27 +45,33 @@ const Index = () => {
       ),
       placeholder: 'https://www.tiktok.com/@username',
       regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i,
-      followUrl: 'https://www.tiktok.com/@dannycross443'
+      followUrl: getFollowUrls().tiktok
     },
     instagram: {
       name: 'Instagram',
       icon: <Instagram className="w-8 h-8" />,
       placeholder: 'https://www.instagram.com/username',
       regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i,
-      followUrl: 'https://www.instagram.com/imdannyc4u/'
+      followUrl: getFollowUrls().instagram
     },
     youtube: {
       name: 'YouTube',
       icon: <Youtube className="w-8 h-8" />,
       placeholder: 'https://www.youtube.com/@username',
       regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i,
-      followUrl: 'https://www.youtube.com/@Dannycross_1'
+      followUrl: getFollowUrls().youtube
     }
   };
 
   // Validate social media URL based on selected platform
   const validateSocialUrl = (url: string, platform: Platform): boolean => {
     return platformConfigs[platform].regex.test(url);
+  };
+
+  // Check if this link has reached the 100 follower limit
+  const hasReachedLimit = (url: string): boolean => {
+    const currentTotal = followerTracker.get(url) || 0;
+    return currentTotal >= 100;
   };
 
   // Check if adding selected followers would exceed 100 total for this link
@@ -71,6 +86,25 @@ const Index = () => {
     return usedAmounts ? usedAmounts.has(amount) : false;
   };
 
+  // Get available follower options for current link
+  const getAvailableFollowerOptions = (url: string): number[] => {
+    if (!url) return followerOptions;
+    
+    const currentTotal = followerTracker.get(url) || 0;
+    const usedAmounts = usedFollowerAmounts.get(url) || new Set();
+    
+    // If link has reached 100 followers, no options available
+    if (currentTotal >= 100) return [];
+    
+    return followerOptions.filter(amount => {
+      // Don't show if already used
+      if (usedAmounts.has(amount)) return false;
+      // Don't show if it would exceed 100
+      if (currentTotal + amount > 100) return false;
+      return true;
+    });
+  };
+
   // Handle social media link input
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const link = e.target.value;
@@ -78,16 +112,26 @@ const Index = () => {
     
     if (link && !validateSocialUrl(link, selectedPlatform)) {
       setLinkError(`Please enter a valid ${platformConfigs[selectedPlatform].name} profile URL (e.g., ${platformConfigs[selectedPlatform].placeholder})`);
+      setShowMissions(false);
+    } else if (link && hasReachedLimit(link)) {
+      setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and is no longer available for use.`);
+      setShowMissions(false);
     } else if (link && selectedFollowers) {
       if (checkFollowerLimit(link, selectedFollowers)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and cannot be used again.`);
+        setLinkError(`Adding ${selectedFollowers} followers would exceed the 100 follower limit for this profile.`);
+        setShowMissions(false);
       } else if (checkDuplicateAmount(link, selectedFollowers)) {
         setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${selectedFollowers} followers. Please choose a different amount.`);
+        setShowMissions(false);
       } else {
         setLinkError('');
+        setShowMissions(true);
       }
     } else {
       setLinkError('');
+      if (link && selectedFollowers) {
+        setShowMissions(true);
+      }
     }
   };
 
@@ -95,6 +139,7 @@ const Index = () => {
   const handlePlatformSelect = (platform: Platform) => {
     setSelectedPlatform(platform);
     setSocialLink('');
+    setSelectedFollowers(null);
     setLinkError('');
     setShowMissions(false);
   };
@@ -103,10 +148,13 @@ const Index = () => {
   const handleFollowerSelect = (count: number) => {
     setSelectedFollowers(count);
     
-    // Check if this selection would exceed the limit or is duplicate for the current link
+    // Check if this selection is valid for the current link
     if (socialLink) {
-      if (checkFollowerLimit(socialLink, count)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and cannot be used again.`);
+      if (hasReachedLimit(socialLink)) {
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and is no longer available for use.`);
+        setShowMissions(false);
+      } else if (checkFollowerLimit(socialLink, count)) {
+        setLinkError(`Adding ${count} followers would exceed the 100 follower limit for this profile.`);
         setShowMissions(false);
       } else if (checkDuplicateAmount(socialLink, count)) {
         setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${count} followers. Please choose a different amount.`);
@@ -160,6 +208,7 @@ const Index = () => {
   // Check if send button should be enabled
   const isSendEnabled = () => {
     if (!selectedFollowers || !socialLink || linkError) return false;
+    if (hasReachedLimit(socialLink)) return false;
     
     const requiredAds = Math.floor(selectedFollowers / 2);
     return watchedAds.length >= requiredAds && followClicked;
@@ -171,7 +220,8 @@ const Index = () => {
 
     // Update follower tracker with new total
     const currentTotal = followerTracker.get(socialLink) || 0;
-    followerTracker.set(socialLink, currentTotal + selectedFollowers!);
+    const newTotal = currentTotal + selectedFollowers!;
+    followerTracker.set(socialLink, newTotal);
 
     // Update used amounts tracker
     if (!usedFollowerAmounts.has(socialLink)) {
@@ -187,7 +237,7 @@ const Index = () => {
       adsWatched: watchedAds.length,
       followCompleted: followClicked,
       timestamp: new Date().toISOString(),
-      totalFollowersForLink: followerTracker.get(socialLink)
+      totalFollowersForLink: newTotal
     };
 
     console.log('Sending data:', formData);
@@ -197,12 +247,20 @@ const Index = () => {
     existingData.push(formData);
     localStorage.setItem('velionMissions', JSON.stringify(existingData));
 
-    // Show success message
-    toast({
-      title: "Mission Completed!",
-      description: "Your mission has been submitted successfully. You will receive your followers soon!",
-      duration: 5000,
-    });
+    // Show success message with limit warning if applicable
+    if (newTotal >= 100) {
+      toast({
+        title: "Mission Completed!",
+        description: `Your mission has been submitted successfully. This profile has now reached the 100 follower limit and cannot be used again.`,
+        duration: 7000,
+      });
+    } else {
+      toast({
+        title: "Mission Completed!",
+        description: `Your mission has been submitted successfully. This profile now has ${newTotal}/100 followers.`,
+        duration: 5000,
+      });
+    }
 
     // Reset form
     setSocialLink('');
@@ -212,6 +270,22 @@ const Index = () => {
     setShowMissions(false);
     setLinkError('');
   };
+
+  // Get current link status for display
+  const getCurrentLinkStatus = () => {
+    if (!socialLink) return null;
+    const currentTotal = followerTracker.get(socialLink) || 0;
+    const availableOptions = getAvailableFollowerOptions(socialLink);
+    
+    return {
+      currentTotal,
+      remainingSlots: 100 - currentTotal,
+      isAtLimit: currentTotal >= 100,
+      availableOptions: availableOptions.length
+    };
+  };
+
+  const linkStatus = getCurrentLinkStatus();
 
   return (
     <div className="min-h-screen bg-liquid-bg text-liquid-text p-6 relative overflow-hidden">
@@ -268,6 +342,37 @@ const Index = () => {
           {linkError && (
             <p className="error-message">{linkError}</p>
           )}
+          
+          {/* Link Status Display */}
+          {linkStatus && socialLink && !linkError && (
+            <div className="mt-4 p-4 bg-liquid-surface/30 rounded-xl border border-white/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-liquid-muted font-inter text-sm">Profile Status</span>
+                <span className={`font-inter font-medium ${linkStatus.isAtLimit ? 'text-red-400' : 'text-liquid-primary'}`}>
+                  {linkStatus.currentTotal}/100 followers used
+                </span>
+              </div>
+              <div className="w-full bg-liquid-surface rounded-full h-2 mb-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    linkStatus.isAtLimit 
+                      ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                      : 'bg-gradient-to-r from-liquid-primary to-liquid-secondary'
+                  }`}
+                  style={{ width: `${(linkStatus.currentTotal / 100) * 100}%` }}
+                ></div>
+              </div>
+              {linkStatus.isAtLimit ? (
+                <p className="text-red-400 font-inter text-sm font-medium">
+                  ⚠️ This profile has reached the maximum limit and cannot be used again
+                </p>
+              ) : (
+                <p className="text-liquid-accent font-inter text-sm">
+                  ✓ {linkStatus.remainingSlots} followers remaining • {linkStatus.availableOptions} options available
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Followers Selection */}
@@ -276,22 +381,31 @@ const Index = () => {
             Choose followers amount
           </Label>
           <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
-            {followerOptions.map((count) => (
-              <div key={count} className="radio-option">
-                <input
-                  type="radio"
-                  id={`followers-${count}`}
-                  name="followers"
-                  value={count}
-                  checked={selectedFollowers === count}
-                  onChange={() => handleFollowerSelect(count)}
-                />
-                <label htmlFor={`followers-${count}`}>
-                  {count}
-                </label>
-              </div>
-            ))}
+            {followerOptions.map((count) => {
+              const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
+              return (
+                <div key={count} className={`radio-option ${!isAvailable ? 'opacity-40 pointer-events-none' : ''}`}>
+                  <input
+                    type="radio"
+                    id={`followers-${count}`}
+                    name="followers"
+                    value={count}
+                    checked={selectedFollowers === count}
+                    onChange={() => handleFollowerSelect(count)}
+                    disabled={!isAvailable}
+                  />
+                  <label htmlFor={`followers-${count}`} className={!isAvailable ? 'line-through' : ''}>
+                    {count}
+                  </label>
+                </div>
+              );
+            })}
           </div>
+          {socialLink && getAvailableFollowerOptions(socialLink).length === 0 && (
+            <p className="text-red-400 font-inter text-sm mt-4 text-center">
+              No follower options available for this profile
+            </p>
+          )}
         </div>
 
         {/* Mission Section */}
