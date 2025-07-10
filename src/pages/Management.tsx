@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink, Settings, Save } from 'lucide-react';
+import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink, Settings, Save, Limit } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
@@ -33,6 +33,7 @@ const Management = () => {
     instagram: 'https://www.instagram.com/imdannyc4u/',
     youtube: 'https://www.youtube.com/@Dannycross_1'
   });
+  const [followerLimit, setFollowerLimit] = useState<number>(100);
 
   useEffect(() => {
     // Load mission data from localStorage
@@ -47,6 +48,12 @@ const Management = () => {
     const storedLinks = localStorage.getItem('velionPlatformLinks');
     if (storedLinks) {
       setPlatformLinks(JSON.parse(storedLinks));
+    }
+
+    // Load follower limit from localStorage
+    const storedLimit = localStorage.getItem('velionFollowerLimit');
+    if (storedLimit) {
+      setFollowerLimit(parseInt(storedLimit));
     }
   }, []);
 
@@ -97,9 +104,10 @@ const Management = () => {
 
   const savePlatformLinks = () => {
     localStorage.setItem('velionPlatformLinks', JSON.stringify(platformLinks));
+    localStorage.setItem('velionFollowerLimit', followerLimit.toString());
     setShowSettings(false);
     // Show success message
-    alert('Platform links updated successfully!');
+    alert('Settings updated successfully!');
   };
 
   const clearAllData = () => {
@@ -173,8 +181,38 @@ const Management = () => {
             
             <div className="space-y-6">
               <p className="text-liquid-muted font-inter">
-                Configure the follow account links for each platform:
+                Configure the follow account links for each platform and system limits:
               </p>
+
+              {/* Follower Limit Settings */}
+              <div className="bg-liquid-surface/20 rounded-lg p-4 border border-orange-500/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-orange-500/20 text-orange-400">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6"/>
+                      <path d="m21 12-6 0m-6 0-6 0"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-inter font-semibold text-liquid-text">Follower Limit</h3>
+                    <p className="text-sm text-liquid-muted">Maximum followers allowed per profile link</p>
+                  </div>
+                </div>
+                <Input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  step="10"
+                  value={followerLimit}
+                  onChange={(e) => setFollowerLimit(Math.max(10, parseInt(e.target.value) || 100))}
+                  placeholder="100"
+                  className="liquid-input"
+                />
+                <p className="text-xs text-liquid-muted mt-2">
+                  Set between 10-1000 followers. This limit applies to all profile links.
+                </p>
+              </div>
               
               <div className="grid md:grid-cols-1 gap-6">
                 {/* TikTok Settings */}

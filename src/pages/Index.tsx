@@ -22,12 +22,21 @@ const Index = () => {
   const [linkError, setLinkError] = useState('');
   const [showMissions, setShowMissions] = useState(false);
   const [showFollowDialog, setShowFollowDialog] = useState(false);
+  const [followerLimit, setFollowerLimit] = useState<number>(100);
 
   const followerOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
+  // Load follower limit from localStorage
+  useEffect(() => {
+    const storedLimit = localStorage.getItem('velionFollowerLimit');
+    if (storedLimit) {
+      setFollowerLimit(parseInt(storedLimit));
+    }
+  }, []);
+
   // Platform configurations - get URLs from localStorage or use defaults
   const getFollowUrls = () => {
-    const saved = localStorage.getItem('velionFollowUrls');
+    const saved = localStorage.getItem('velionPlatformLinks');
     return saved ? JSON.parse(saved) : {
       tiktok: 'https://www.tiktok.com/@dannycross443',
       instagram: 'https://www.instagram.com/imdannyc4u/',
@@ -68,16 +77,16 @@ const Index = () => {
     return platformConfigs[platform].regex.test(url);
   };
 
-  // Check if this link has reached the 100 follower limit
+  // Check if this link has reached the configurable follower limit
   const hasReachedLimit = (url: string): boolean => {
     const currentTotal = followerTracker.get(url) || 0;
-    return currentTotal >= 100;
+    return currentTotal >= followerLimit;
   };
 
-  // Check if adding selected followers would exceed 100 total for this link
+  // Check if adding selected followers would exceed the configurable limit
   const checkFollowerLimit = (url: string, newFollowers: number): boolean => {
     const currentTotal = followerTracker.get(url) || 0;
-    return currentTotal + newFollowers > 100;
+    return currentTotal + newFollowers > followerLimit;
   };
 
   // Get available follower options for current link
@@ -86,12 +95,12 @@ const Index = () => {
     
     const currentTotal = followerTracker.get(url) || 0;
     
-    // If link has reached 100 followers, no options available
-    if (currentTotal >= 100) return [];
+    // If link has reached the limit, no options available
+    if (currentTotal >= followerLimit) return [];
     
     return followerOptions.filter(amount => {
-      // Don't show if it would exceed 100
-      if (currentTotal + amount > 100) return false;
+      // Don't show if it would exceed the limit
+      if (currentTotal + amount > followerLimit) return false;
       return true;
     });
   };
@@ -105,11 +114,11 @@ const Index = () => {
       setLinkError(`Please enter a valid ${platformConfigs[selectedPlatform].name} profile URL (e.g., ${platformConfigs[selectedPlatform].placeholder})`);
       setShowMissions(false);
     } else if (link && hasReachedLimit(link)) {
-      setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and is no longer available for use.`);
+      setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
       setShowMissions(false);
     } else if (link && selectedFollowers) {
       if (checkFollowerLimit(link, selectedFollowers)) {
-        setLinkError(`Adding ${selectedFollowers} followers would exceed the 100 follower limit for this profile.`);
+        setLinkError(`Adding ${selectedFollowers} followers would exceed the ${followerLimit} follower limit for this profile.`);
         setShowMissions(false);
       } else {
         setLinkError('');
@@ -139,10 +148,10 @@ const Index = () => {
     // Check if this selection is valid for the current link
     if (socialLink) {
       if (hasReachedLimit(socialLink)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received 100 followers and is no longer available for use.`);
+        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
         setShowMissions(false);
       } else if (checkFollowerLimit(socialLink, count)) {
-        setLinkError(`Adding ${count} followers would exceed the 100 follower limit for this profile.`);
+        setLinkError(`Adding ${count} followers would exceed the ${followerLimit} follower limit for this profile.`);
         setShowMissions(false);
       } else {
         setLinkError('');
@@ -227,16 +236,16 @@ const Index = () => {
     localStorage.setItem('velionMissions', JSON.stringify(existingData));
 
     // Show success message with limit warning if applicable
-    if (newTotal >= 100) {
+    if (newTotal >= followerLimit) {
       toast({
         title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile has now reached the 100 follower limit and cannot be used again.`,
+        description: `Your mission has been submitted successfully. This profile has now reached the ${followerLimit} follower limit and cannot be used again.`,
         duration: 7000,
       });
     } else {
       toast({
         title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile now has ${newTotal}/100 followers.`,
+        description: `Your mission has been submitted successfully. This profile now has ${newTotal}/${followerLimit} followers.`,
         duration: 5000,
       });
     }
@@ -258,8 +267,8 @@ const Index = () => {
     
     return {
       currentTotal,
-      remainingSlots: 100 - currentTotal,
-      isAtLimit: currentTotal >= 100,
+      remainingSlots: followerLimit - currentTotal,
+      isAtLimit: currentTotal >= followerLimit,
       availableOptions: availableOptions.length
     };
   };
@@ -328,7 +337,7 @@ const Index = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-liquid-muted font-inter text-sm">Profile Status</span>
                 <span className={`font-inter font-medium ${linkStatus.isAtLimit ? 'text-red-400' : 'text-liquid-primary'}`}>
-                  {linkStatus.currentTotal}/100 followers used
+                  {linkStatus.currentTotal}/{followerLimit} followers used
                 </span>
               </div>
               <div className="w-full bg-liquid-surface rounded-full h-2 mb-2">
@@ -338,7 +347,7 @@ const Index = () => {
                       ? 'bg-gradient-to-r from-red-500 to-red-600' 
                       : 'bg-gradient-to-r from-liquid-primary to-liquid-secondary'
                   }`}
-                  style={{ width: `${(linkStatus.currentTotal / 100) * 100}%` }}
+                  style={{ width: `${(linkStatus.currentTotal / followerLimit) * 100}%` }}
                 ></div>
               </div>
               {linkStatus.isAtLimit ? (
