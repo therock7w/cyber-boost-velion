@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink, Settings, Save, Limit } from 'lucide-react';
+import { Search, X, Clock, TrendingUp, Eye, UserCheck, Calendar, Instagram, Youtube, ExternalLink, Settings, Save } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MissionData {
