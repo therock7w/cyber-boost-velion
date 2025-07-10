@@ -80,25 +80,16 @@ const Index = () => {
     return currentTotal + newFollowers > 100;
   };
 
-  // Check if this follower amount has already been used for this link
-  const checkDuplicateAmount = (url: string, amount: number): boolean => {
-    const usedAmounts = usedFollowerAmounts.get(url);
-    return usedAmounts ? usedAmounts.has(amount) : false;
-  };
-
   // Get available follower options for current link
   const getAvailableFollowerOptions = (url: string): number[] => {
     if (!url) return followerOptions;
     
     const currentTotal = followerTracker.get(url) || 0;
-    const usedAmounts = usedFollowerAmounts.get(url) || new Set();
     
     // If link has reached 100 followers, no options available
     if (currentTotal >= 100) return [];
     
     return followerOptions.filter(amount => {
-      // Don't show if already used
-      if (usedAmounts.has(amount)) return false;
       // Don't show if it would exceed 100
       if (currentTotal + amount > 100) return false;
       return true;
@@ -119,9 +110,6 @@ const Index = () => {
     } else if (link && selectedFollowers) {
       if (checkFollowerLimit(link, selectedFollowers)) {
         setLinkError(`Adding ${selectedFollowers} followers would exceed the 100 follower limit for this profile.`);
-        setShowMissions(false);
-      } else if (checkDuplicateAmount(link, selectedFollowers)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${selectedFollowers} followers. Please choose a different amount.`);
         setShowMissions(false);
       } else {
         setLinkError('');
@@ -155,9 +143,6 @@ const Index = () => {
         setShowMissions(false);
       } else if (checkFollowerLimit(socialLink, count)) {
         setLinkError(`Adding ${count} followers would exceed the 100 follower limit for this profile.`);
-        setShowMissions(false);
-      } else if (checkDuplicateAmount(socialLink, count)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already been used with ${count} followers. Please choose a different amount.`);
         setShowMissions(false);
       } else {
         setLinkError('');
@@ -222,12 +207,6 @@ const Index = () => {
     const currentTotal = followerTracker.get(socialLink) || 0;
     const newTotal = currentTotal + selectedFollowers!;
     followerTracker.set(socialLink, newTotal);
-
-    // Update used amounts tracker
-    if (!usedFollowerAmounts.has(socialLink)) {
-      usedFollowerAmounts.set(socialLink, new Set());
-    }
-    usedFollowerAmounts.get(socialLink)!.add(selectedFollowers!);
 
     // Create form data to send to management page
     const formData = {
