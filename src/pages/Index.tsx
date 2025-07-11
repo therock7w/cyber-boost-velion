@@ -19,11 +19,9 @@ const Index = () => {
   const [selectedFollowers, setSelectedFollowers] = useState<number | null>(null);
   const [watchedAds, setWatchedAds] = useState<number[]>([]);
   const [followClicked, setFollowClicked] = useState(false);
-  const [isFollowVerified, setIsFollowVerified] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [showMissions, setShowMissions] = useState(false);
   const [showFollowDialog, setShowFollowDialog] = useState(false);
-  const [showFollowVerification, setShowFollowVerification] = useState(false);
   const [followerLimit, setFollowerLimit] = useState<number>(100);
 
   // Generate follower options dynamically based on the current limit
@@ -81,18 +79,6 @@ const Index = () => {
       regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i,
       followUrl: getFollowUrls().youtube
     }
-  };
-
-  // Check if user has already verified follow for this platform
-  const checkExistingFollowVerification = (platform: Platform): boolean => {
-    const verificationKey = `velion_follow_verified_${platform}`;
-    return localStorage.getItem(verificationKey) === 'true';
-  };
-
-  // Save follow verification status
-  const saveFollowVerification = (platform: Platform) => {
-    const verificationKey = `velion_follow_verified_${platform}`;
-    localStorage.setItem(verificationKey, 'true');
   };
 
   // Validate social media URL based on selected platform
@@ -162,11 +148,6 @@ const Index = () => {
     setSelectedFollowers(null);
     setLinkError('');
     setShowMissions(false);
-    
-    // Check if user already verified follow for this platform
-    const alreadyVerified = checkExistingFollowVerification(platform);
-    setIsFollowVerified(alreadyVerified);
-    setFollowClicked(alreadyVerified);
   };
 
   // Handle follower selection
@@ -190,6 +171,7 @@ const Index = () => {
     }
     
     setWatchedAds([]);
+    setFollowClicked(false);
   };
 
   // Load existing data on component mount
@@ -207,12 +189,7 @@ const Index = () => {
       }
       usedFollowerAmounts.get(linkKey)!.add(mission.followers);
     });
-
-    // Check initial follow verification status
-    const alreadyVerified = checkExistingFollowVerification(selectedPlatform);
-    setIsFollowVerified(alreadyVerified);
-    setFollowClicked(alreadyVerified);
-  }, [selectedPlatform]);
+  }, []);
 
   // Handle ad watching
   const handleAdWatch = (adIndex: number) => {
@@ -223,56 +200,21 @@ const Index = () => {
 
   // Handle follow button click
   const handleFollowClick = () => {
-    // Check if already verified
-    if (isFollowVerified) {
-      toast({
-        title: "Already Verified!",
-        description: `You have already verified that you follow this ${platformConfigs[selectedPlatform].name} account.`,
-        duration: 3000,
-      });
-      return;
-    }
-
     // Open the specific account URL for the selected platform
     window.open(platformConfigs[selectedPlatform].followUrl, '_blank');
     setFollowClicked(true);
     
-    // Show the verification dialog after opening the follow link
-    setTimeout(() => {
-      setShowFollowVerification(true);
-    }, 2000);
-  };
-
-  // Handle follow verification
-  const handleFollowVerification = (verified: boolean) => {
-    setShowFollowVerification(false);
-    
-    if (verified) {
-      setIsFollowVerified(true);
-      saveFollowVerification(selectedPlatform);
-      toast({
-        title: "Follow Verified!",
-        description: `Great! You've successfully followed our ${platformConfigs[selectedPlatform].name} account. You can now complete missions.`,
-        duration: 5000,
-      });
-    } else {
-      setFollowClicked(false);
-      toast({
-        title: "Follow Required",
-        description: `You must follow our ${platformConfigs[selectedPlatform].name} account to unlock the send mission feature.`,
-        duration: 5000,
-      });
-    }
+    // Show the styled popup dialog
+    setShowFollowDialog(true);
   };
 
   // Check if send button should be enabled
   const isSendEnabled = () => {
     if (!selectedFollowers || !socialLink || linkError) return false;
     if (hasReachedLimit(socialLink)) return false;
-    if (!isFollowVerified) return false;
     
     const requiredAds = Math.floor(selectedFollowers / 2);
-    return watchedAds.length >= requiredAds;
+    return watchedAds.length >= requiredAds && followClicked;
   };
 
   // Handle send button
@@ -290,7 +232,7 @@ const Index = () => {
       platform: selectedPlatform,
       followers: selectedFollowers,
       adsWatched: watchedAds.length,
-      followCompleted: isFollowVerified,
+      followCompleted: followClicked,
       timestamp: new Date().toISOString(),
       totalFollowersForLink: newTotal
     };
@@ -321,9 +263,9 @@ const Index = () => {
     setSocialLink('');
     setSelectedFollowers(null);
     setWatchedAds([]);
+    setFollowClicked(false);
     setShowMissions(false);
     setLinkError('');
-    // Keep follow verification status as it's persistent
   };
 
   // Get current link status for display
@@ -503,22 +445,17 @@ const Index = () => {
             {/* Follow Account Section */}
             <div className="mb-8">
               <h3 className="text-2xl font-inter font-semibold mb-6 text-liquid-text">
-                Follow Account {isFollowVerified && <span className="text-liquid-accent text-lg">✓ Verified</span>}
+                Follow Account
               </h3>
               <Button
                 onClick={handleFollowClick}
-                className={`liquid-button w-full md:w-auto ${isFollowVerified ? 'active' : ''}`}
+                className={`liquid-button w-full md:w-auto ${followClicked ? 'active' : ''}`}
               >
-                {isFollowVerified ? '✓ Follow Verified' : `Follow this ${platformConfigs[selectedPlatform].name} account`}
+                {followClicked ? '✓ Follow Completed' : `Follow this ${platformConfigs[selectedPlatform].name} account`}
               </Button>
-              {isFollowVerified && (
+              {followClicked && (
                 <p className="text-liquid-accent font-inter text-sm mt-3">
-                  ✓ You have successfully followed our {platformConfigs[selectedPlatform].name} account
-                </p>
-              )}
-              {!isFollowVerified && followClicked && (
-                <p className="text-liquid-muted font-inter text-sm mt-3">
-                  Please verify that you have followed the account to continue
+                  ✓ Follow requirement completed
                 </p>
               )}
             </div>
@@ -537,10 +474,7 @@ const Index = () => {
             </Button>
             {!isSendEnabled() && selectedFollowers && (
               <p className="text-liquid-muted font-inter text-sm mt-4">
-                {!isFollowVerified 
-                  ? `You must follow our ${platformConfigs[selectedPlatform].name} account to unlock the send button`
-                  : 'Complete all missions to activate the send button'
-                }
+                Complete all missions to activate the send button
               </p>
             )}
           </div>
@@ -580,45 +514,6 @@ const Index = () => {
                 className="liquid-button w-full"
               >
                 I understand
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Follow Verification Dialog */}
-      <Dialog open={showFollowVerification} onOpenChange={setShowFollowVerification}>
-        <DialogContent className="max-w-md mx-auto bg-liquid-surface/95 backdrop-blur-lg border border-white/20 rounded-3xl text-liquid-text">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-inter font-bold text-center text-transparent bg-clip-text bg-liquid-gradient mb-4">
-              Verify Your Follow
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-liquid-primary to-liquid-secondary flex items-center justify-center">
-                {platformConfigs[selectedPlatform].icon}
-              </div>
-            </div>
-            <p className="text-center font-inter text-lg leading-relaxed">
-              Have you successfully followed our {platformConfigs[selectedPlatform].name} account?
-            </p>
-            <p className="text-center font-inter text-sm text-liquid-muted">
-              Please be honest - verification is required to proceed with missions.
-            </p>
-            <div className="flex gap-4 pt-4">
-              <Button 
-                onClick={() => handleFollowVerification(true)}
-                className="liquid-button flex-1"
-              >
-                ✓ Yes, I followed
-              </Button>
-              <Button 
-                onClick={() => handleFollowVerification(false)}
-                variant="outline"
-                className="flex-1 border-white/20 text-liquid-text hover:bg-liquid-surface/30"
-              >
-                No, not yet
               </Button>
             </div>
           </div>
