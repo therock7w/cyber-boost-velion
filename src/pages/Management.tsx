@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,9 +51,9 @@ interface Mission {
 
 const Management = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
-  const [followerLimit, setFollowerLimit] = useState<number>(100);
+  const [followerLimit, setFollowerLimit] = useState<number>(110);
   const [searchQuery, setSearchQuery] = useState('');
-  const [platformFilter, setPlatformFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [platformUrls, setPlatformUrls] = useState({
     tiktok: '',
@@ -95,7 +96,7 @@ const Management = () => {
     const platform = mission.platform.toLowerCase();
 
     const matchesSearch = link.includes(searchTerm) || platform.includes(searchTerm);
-    const matchesPlatform = platformFilter ? mission.platform === platformFilter : true;
+    const matchesPlatform = platformFilter === 'all' ? true : mission.platform === platformFilter;
     const matchesDate = dateFilter ? format(new Date(mission.timestamp), 'yyyy-MM-dd') === format(dateFilter, 'yyyy-MM-dd') : true;
 
     return matchesSearch && matchesPlatform && matchesDate;
@@ -284,7 +285,7 @@ const Management = () => {
                 <SelectValue placeholder="Filter by platform" />
               </SelectTrigger>
               <SelectContent className="bg-liquid-surface border-white/10">
-                <SelectItem value="">All Platforms</SelectItem>
+                <SelectItem value="all">All Platforms</SelectItem>
                 <SelectItem value="tiktok">TikTok</SelectItem>
                 <SelectItem value="instagram">Instagram</SelectItem>
                 <SelectItem value="youtube">YouTube</SelectItem>
