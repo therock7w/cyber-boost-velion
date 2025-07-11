@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,9 +106,10 @@ const Management = () => {
     setFollowerLimit(newLimit);
     localStorage.setItem('velionFollowerLimit', newLimit.toString());
     
+    const action = increment > 0 ? 'increased' : 'decreased';
     toast({
       title: "Follower Limit Updated",
-      description: `New follower limit set to ${newLimit}`,
+      description: `Follower limit ${action} to ${newLimit}. Follower options updated accordingly.`,
     });
   };
 
@@ -187,6 +187,9 @@ const Management = () => {
                 </div>
                 <p className="text-sm text-liquid-muted mt-2">
                   Current limit: {followerLimit} followers per social media profile
+                </p>
+                <p className="text-xs text-liquid-muted mt-1">
+                  Adjusting this limit will update the available follower amounts on the main page
                 </p>
               </div>
 
