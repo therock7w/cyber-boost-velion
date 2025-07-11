@@ -36,7 +36,7 @@ import {
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle2, Settings, Save } from 'lucide-react';
+import { CheckCircle2, Settings, Save, Tag, X } from 'lucide-react';
 
 interface Mission {
   socialLink: string;
@@ -46,6 +46,11 @@ interface Mission {
   followCompleted: boolean;
   timestamp: string;
   totalFollowersForLink: number;
+}
+
+interface FollowerLabel {
+  amount: number;
+  label: 'NEW' | 'SOON' | null;
 }
 
 const Management = () => {
@@ -59,6 +64,18 @@ const Management = () => {
     instagram: '',
     youtube: ''
   });
+  const [followerLabels, setFollowerLabels] = useState<FollowerLabel[]>([]);
+
+  // Generate follower options dynamically based on the current limit
+  const generateFollowerOptions = (limit: number): number[] => {
+    const options = [];
+    for (let i = 10; i <= limit; i += 10) {
+      options.push(i);
+    }
+    return options;
+  };
+
+  const followerOptions = generateFollowerOptions(followerLimit);
 
   // Load follower limit from localStorage
   useEffect(() => {
@@ -67,6 +84,41 @@ const Management = () => {
       setFollowerLimit(parseInt(storedLimit));
     }
   }, []);
+
+  // Load follower labels from localStorage
+  useEffect(() => {
+    const storedLabels = localStorage.getItem('velionFollowerLabels');
+    if (storedLabels) {
+      setFollowerLabels(JSON.parse(storedLabels));
+    } else {
+      // Initialize with default empty labels for all options
+      const defaultLabels = followerOptions.map(amount => ({
+        amount,
+        label: null as 'NEW' | 'SOON' | null
+      }));
+      setFollowerLabels(defaultLabels);
+    }
+  }, [followerLimit]);
+
+  // Update follower labels when follower limit changes
+  useEffect(() => {
+    const currentLabels = [...followerLabels];
+    const newOptions = generateFollowerOptions(followerLimit);
+    
+    // Add new options that don't exist in labels
+    newOptions.forEach(amount => {
+      if (!currentLabels.find(label => label.amount === amount)) {
+        currentLabels.push({ amount, label: null });
+      }
+    });
+    
+    // Remove options that no longer exist
+    const filteredLabels = currentLabels.filter(label => 
+      newOptions.includes(label.amount)
+    );
+    
+    setFollowerLabels(filteredLabels.sort((a, b) => a.amount - b.amount));
+  }, [followerLimit]);
 
   useEffect(() => {
     const storedUrls = localStorage.getItem('velionPlatformLinks');
@@ -125,6 +177,21 @@ const Management = () => {
     setDateFilter(date);
   };
 
+  const handleLabelChange = (amount: number, label: 'NEW' | 'SOON' | null) => {
+    const updatedLabels = followerLabels.map(item =>
+      item.amount === amount ? { ...item, label } : item
+    );
+    setFollowerLabels(updatedLabels);
+  };
+
+  const saveFollowerLabels = () => {
+    localStorage.setItem('velionFollowerLabels', JSON.stringify(followerLabels));
+    toast({
+      title: "Follower Labels Saved",
+      description: "The follower button labels have been successfully saved.",
+    });
+  };
+
   const totalMissions = missions.length;
   const totalFollowers = missions.reduce((sum, mission) => sum + mission.followers, 0);
   const totalAdsWatched = missions.reduce((sum, mission) => sum + mission.adsWatched, 0);
@@ -162,7 +229,7 @@ const Management = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-liquid-text mb-2">
                   Follower Limit per Profile
@@ -191,6 +258,59 @@ const Management = () => {
                 <p className="text-xs text-liquid-muted mt-1">
                   Adjusting this limit will update the available follower amounts on the main page
                 </p>
+              </div>
+
+              {/* Follower Button Labels Section */}
+              <div>
+                <label className="block text-sm font-medium text-liquid-text mb-2">
+                  <Tag className="w-4 h-4 inline mr-2" />
+                  Follower Button Labels
+                </label>
+                <p className="text-xs text-liquid-muted mb-4">
+                  Add "NEW" or "SOON" labels to specific follower amount buttons
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+                  {followerLabels.map((item) => (
+                    <div key={item.amount} className="space-y-2">
+                      <div className="text-center">
+                        <span className="text-liquid-text font-medium">{item.amount}</span>
+                      </div>
+                      <Select
+                        value={item.label || 'none'}
+                        onValueChange={(value) => 
+                          handleLabelChange(item.amount, value === 'none' ? null : value as 'NEW' | 'SOON')
+                        }
+                      >
+                        <SelectTrigger className="liquid-select text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-liquid-surface border-white/10">
+                          <SelectItem value="none">No Label</SelectItem>
+                          <SelectItem value="NEW">NEW</SelectItem>
+                          <SelectItem value="SOON">SOON</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {item.label && (
+                        <div className="flex items-center justify-center">
+                          <span className={`text-xs px-2 py-1 rounded-full font-bold ${
+                            item.label === 'NEW' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {item.label}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={saveFollowerLabels}
+                  className="liquid-button"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Labels
+                </Button>
               </div>
 
               {/* Platform URLs Configuration */}

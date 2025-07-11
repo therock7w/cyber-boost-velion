@@ -13,6 +13,11 @@ const usedFollowerAmounts = new Map<string, Set<number>>();
 
 type Platform = 'tiktok' | 'instagram' | 'youtube';
 
+interface FollowerLabel {
+  amount: number;
+  label: 'NEW' | 'SOON' | null;
+}
+
 const Index = () => {
   const [socialLink, setSocialLink] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('tiktok');
@@ -23,6 +28,7 @@ const Index = () => {
   const [showMissions, setShowMissions] = useState(false);
   const [showFollowDialog, setShowFollowDialog] = useState(false);
   const [followerLimit, setFollowerLimit] = useState<number>(100);
+  const [followerLabels, setFollowerLabels] = useState<FollowerLabel[]>([]);
 
   // Generate follower options dynamically based on the current limit
   const generateFollowerOptions = (limit: number): number[] => {
@@ -42,6 +48,20 @@ const Index = () => {
       setFollowerLimit(parseInt(storedLimit));
     }
   }, []);
+
+  // Load follower labels from localStorage
+  useEffect(() => {
+    const storedLabels = localStorage.getItem('velionFollowerLabels');
+    if (storedLabels) {
+      setFollowerLabels(JSON.parse(storedLabels));
+    }
+  }, []);
+
+  // Get label for specific follower amount
+  const getLabelForAmount = (amount: number): 'NEW' | 'SOON' | null => {
+    const labelInfo = followerLabels.find(item => item.amount === amount);
+    return labelInfo?.label || null;
+  };
 
   // Platform configurations - get URLs from localStorage or use defaults
   const getFollowUrls = () => {
@@ -380,8 +400,9 @@ const Index = () => {
           <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
             {followerOptions.map((count) => {
               const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
+              const label = getLabelForAmount(count);
               return (
-                <div key={count} className={`radio-option ${!isAvailable ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''}`}>
                   <input
                     type="radio"
                     id={`followers-${count}`}
@@ -394,6 +415,17 @@ const Index = () => {
                   <label htmlFor={`followers-${count}`} className={!isAvailable ? 'line-through' : ''}>
                     {count}
                   </label>
+                  {label && isAvailable && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <span className={`text-xs px-2 py-1 rounded-full font-bold shadow-lg ${
+                        label === 'NEW' 
+                          ? 'bg-green-500 text-white animate-pulse' 
+                          : 'bg-blue-500 text-white animate-pulse'
+                      }`}>
+                        {label}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
