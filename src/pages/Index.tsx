@@ -24,7 +24,16 @@ const Index = () => {
   const [showFollowDialog, setShowFollowDialog] = useState(false);
   const [followerLimit, setFollowerLimit] = useState<number>(100);
 
-  const followerOptions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  // Generate follower options dynamically based on the current limit
+  const generateFollowerOptions = (limit: number): number[] => {
+    const options = [];
+    for (let i = 10; i <= limit; i += 10) {
+      options.push(i);
+    }
+    return options;
+  };
+
+  const followerOptions = generateFollowerOptions(followerLimit);
 
   // Load follower limit from localStorage
   useEffect(() => {
