@@ -102,7 +102,7 @@ const Management = () => {
   });
 
   const handleFollowerLimitChange = (increment: number) => {
-    const newLimit = Math.max(110, followerLimit + increment);
+    const newLimit = Math.max(10, followerLimit + increment);
     setFollowerLimit(newLimit);
     localStorage.setItem('velionFollowerLimit', newLimit.toString());
     
@@ -170,7 +170,7 @@ const Management = () => {
                 <div className="flex items-center gap-4">
                   <Button
                     onClick={() => handleFollowerLimitChange(-10)}
-                    disabled={followerLimit <= 110}
+                    disabled={followerLimit <= 10}
                     className="liquid-button px-3 py-1"
                   >
                     -10
