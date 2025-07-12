@@ -401,8 +401,9 @@ const Index = () => {
             {followerOptions.map((count) => {
               const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
               const label = getLabelForAmount(count);
+              const isSoon = label === 'SOON';
               return (
-                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'opacity-60' : ''}`}>
                   <input
                     type="radio"
                     id={`followers-${count}`}
@@ -412,7 +413,7 @@ const Index = () => {
                     onChange={() => handleFollowerSelect(count)}
                     disabled={!isAvailable}
                   />
-                  <label htmlFor={`followers-${count}`} className={!isAvailable ? 'line-through' : ''}>
+                  <label htmlFor={`followers-${count}`} className={`${!isAvailable ? 'line-through' : ''} ${isSoon ? 'transition-all duration-300' : ''}`}>
                     {count}
                   </label>
                   {label && isAvailable && (
@@ -420,7 +421,7 @@ const Index = () => {
                       <span className={`text-xs px-2 py-1 rounded-full font-bold shadow-lg ${
                         label === 'NEW' 
                           ? 'bg-green-500 text-white animate-pulse' 
-                          : 'bg-blue-500 text-white animate-pulse'
+                          : 'bg-blue-500/80 text-white'
                       }`}>
                         {label}
                       </span>

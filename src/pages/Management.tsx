@@ -182,13 +182,24 @@ const Management = () => {
       item.amount === amount ? { ...item, label } : item
     );
     setFollowerLabels(updatedLabels);
+    
+    // Auto-save to localStorage immediately when label changes
+    localStorage.setItem('velionFollowerLabels', JSON.stringify(updatedLabels));
+    
+    // Show a subtle toast notification
+    const labelText = label ? label : 'No Label';
+    toast({
+      title: "Label Updated",
+      description: `Button ${amount} is now labeled as: ${labelText}`,
+      duration: 2000,
+    });
   };
 
   const saveFollowerLabels = () => {
     localStorage.setItem('velionFollowerLabels', JSON.stringify(followerLabels));
     toast({
       title: "Follower Labels Saved",
-      description: "The follower button labels have been successfully saved.",
+      description: "All follower button labels have been successfully saved.",
     });
   };
 
@@ -267,7 +278,7 @@ const Management = () => {
                   Follower Button Labels
                 </label>
                 <p className="text-xs text-liquid-muted mb-4">
-                  Add "NEW" or "SOON" labels to specific follower amount buttons
+                  Add "NEW" or "SOON" labels to specific follower amount buttons. Labels are automatically saved when changed.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                   {followerLabels.map((item) => (
@@ -304,13 +315,9 @@ const Management = () => {
                     </div>
                   ))}
                 </div>
-                <Button
-                  onClick={saveFollowerLabels}
-                  className="liquid-button"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Labels
-                </Button>
+                <div className="text-xs text-liquid-muted/70 mb-2">
+                  ✓ Changes are automatically saved • "SOON" buttons will appear faded but remain usable on the main page
+                </div>
               </div>
 
               {/* Platform URLs Configuration */}
