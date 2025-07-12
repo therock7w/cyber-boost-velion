@@ -172,6 +172,18 @@ const Index = () => {
 
   // Handle follower selection
   const handleFollowerSelect = (count: number) => {
+    const label = getLabelForAmount(count);
+    
+    // Don't allow selection of SOON buttons
+    if (label === 'SOON') {
+      toast({
+        title: "Coming Soon",
+        description: `${count} followers option is coming soon and not available yet.`,
+        duration: 3000,
+      });
+      return;
+    }
+
     setSelectedFollowers(count);
     
     // Check if this selection is valid for the current link
@@ -402,6 +414,8 @@ const Index = () => {
               const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
               const label = getLabelForAmount(count);
               const isSoon = label === 'SOON';
+              const isDisabled = !isAvailable || isSoon;
+              
               return (
                 <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'soon-button' : ''}`}>
                   <input
@@ -411,9 +425,12 @@ const Index = () => {
                     value={count}
                     checked={selectedFollowers === count}
                     onChange={() => handleFollowerSelect(count)}
-                    disabled={!isAvailable}
+                    disabled={isDisabled}
                   />
-                  <label htmlFor={`followers-${count}`} className={`${!isAvailable ? 'line-through' : ''}`}>
+                  <label 
+                    htmlFor={`followers-${count}`} 
+                    className={`${!isAvailable && !isSoon ? 'line-through' : ''} ${isSoon ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
                     {count}
                   </label>
                   {label && isAvailable && (

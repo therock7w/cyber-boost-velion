@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
@@ -187,20 +186,32 @@
   transform: translateY(-1px);
 }
 
-/* SOON button styling - faded but functional */
+/* SOON button styling - faded and disabled */
 .radio-option.soon-button {
-  opacity: 0.6;
-  filter: grayscale(0.3);
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  pointer-events: none;
 }
 
-.radio-option.soon-button:hover {
-  opacity: 0.8;
-  filter: grayscale(0.1);
+.radio-option.soon-button label {
+  cursor: not-allowed;
+  background: hsl(var(--card) / 0.1);
+  border-color: hsl(var(--border) / 0.3);
+  color: hsl(var(--muted-foreground));
 }
 
-.radio-option.soon-button input[type="radio"]:checked + label {
-  opacity: 1;
-  filter: none;
+.radio-option.soon-button:hover label {
+  border-color: hsl(var(--border) / 0.3);
+  transform: none;
+}
+
+/* Ensure SOON buttons can't be selected */
+.radio-option.soon-button input[type="radio"]:disabled + label {
+  background: hsl(var(--card) / 0.1);
+  border-color: hsl(var(--border) / 0.3);
+  color: hsl(var(--muted-foreground));
+  box-shadow: none;
+  transform: none;
 }
 
 /* Error message styling */
