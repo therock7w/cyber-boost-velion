@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
-import { Instagram, Youtube } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-// Store total followers requested per social media link
-const followerTracker = new Map<string, number>();
-// Store used follower amounts per social media link
-const usedFollowerAmounts = new Map<string, Set<number>>();
-
-type Platform = 'tiktok' | 'instagram' | 'youtube';
+interface Mission {
+  socialLink: string;
+  platform: string;
+  followers: number;
+  adsWatched: number;
+  followCompleted: boolean;
+  timestamp: string;
+  totalFollowersForLink: number;
+}
 
 interface FollowerLabel {
   amount: number;
@@ -19,18 +29,56 @@ interface FollowerLabel {
 }
 
 const Index = () => {
+  console.log("Index component rendering");
+  
   const [socialLink, setSocialLink] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>('tiktok');
   const [selectedFollowers, setSelectedFollowers] = useState<number | null>(null);
-  const [watchedAds, setWatchedAds] = useState<number[]>([]);
-  const [followClicked, setFollowClicked] = useState(false);
-  const [linkError, setLinkError] = useState('');
-  const [showMissions, setShowMissions] = useState(false);
-  const [showFollowDialog, setShowFollowDialog] = useState(false);
-  const [followerLimit, setFollowerLimit] = useState<number>(100);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [followerLimit, setFollowerLimit] = useState<number>(110);
   const [followerLabels, setFollowerLabels] = useState<FollowerLabel[]>([]);
+  const [platformUrls, setPlatformUrls] = useState({
+    tiktok: '',
+    instagram: '',
+    youtube: ''
+  });
+  const { toast } = useToast();
 
-  // Generate follower options dynamically based on the current limit
+  useEffect(() => {
+    console.log("Loading missions from localStorage");
+    const storedMissions = localStorage.getItem('velionMissions');
+    if (storedMissions) {
+      setMissions(JSON.parse(storedMissions));
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedLimit = localStorage.getItem('velionFollowerLimit');
+    if (storedLimit) {
+      setFollowerLimit(parseInt(storedLimit));
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedLabels = localStorage.getItem('velionFollowerLabels');
+    if (storedLabels) {
+      setFollowerLabels(JSON.parse(storedLabels));
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedUrls = localStorage.getItem('velionPlatformLinks');
+    if (storedUrls) {
+      setPlatformUrls(JSON.parse(storedUrls));
+    } else {
+      setPlatformUrls({
+        tiktok: 'https://www.tiktok.com/@dannycross443',
+        instagram: 'https://www.instagram.com/imdannyc4u/',
+        youtube: 'https://www.youtube.com/@Dannycross_1'
+      });
+    }
+  }, []);
+
   const generateFollowerOptions = (limit: number): number[] => {
     const options = [];
     for (let i = 10; i <= limit; i += 10) {
@@ -41,140 +89,28 @@ const Index = () => {
 
   const followerOptions = generateFollowerOptions(followerLimit);
 
-  // Load follower limit from localStorage
-  useEffect(() => {
-    const storedLimit = localStorage.getItem('velionFollowerLimit');
-    if (storedLimit) {
-      setFollowerLimit(parseInt(storedLimit));
-    }
-  }, []);
+  const detectPlatform = (url: string): string => {
+    if (url.includes('tiktok.com')) return 'tiktok';
+    if (url.includes('instagram.com')) return 'instagram';
+    if (url.includes('youtube.com')) return 'youtube';
+    return 'unknown';
+  };
 
-  // Load follower labels from localStorage
-  useEffect(() => {
-    const storedLabels = localStorage.getItem('velionFollowerLabels');
-    if (storedLabels) {
-      setFollowerLabels(JSON.parse(storedLabels));
-    }
-  }, []);
-
-  // Get label for specific follower amount
   const getLabelForAmount = (amount: number): 'NEW' | 'SOON' | null => {
-    const labelInfo = followerLabels.find(item => item.amount === amount);
-    return labelInfo?.label || null;
+    const labelData = followerLabels.find(label => label.amount === amount);
+    return labelData ? labelData.label : null;
   };
 
-  // Platform configurations - get URLs from localStorage or use defaults
-  const getFollowUrls = () => {
-    const saved = localStorage.getItem('velionPlatformLinks');
-    return saved ? JSON.parse(saved) : {
-      tiktok: 'https://www.tiktok.com/@dannycross443',
-      instagram: 'https://www.instagram.com/imdannyc4u/',
-      youtube: 'https://www.youtube.com/@Dannycross_1'
-    };
-  };
-
-  const platformConfigs = {
-    tiktok: {
-      name: 'TikTok',
-      icon: (
-        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-        </svg>
-      ),
-      placeholder: 'https://www.tiktok.com/@username',
-      regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i,
-      followUrl: getFollowUrls().tiktok
-    },
-    instagram: {
-      name: 'Instagram',
-      icon: <Instagram className="w-8 h-8" />,
-      placeholder: 'https://www.instagram.com/username',
-      regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i,
-      followUrl: getFollowUrls().instagram
-    },
-    youtube: {
-      name: 'YouTube',
-      icon: <Youtube className="w-8 h-8" />,
-      placeholder: 'https://www.youtube.com/@username',
-      regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i,
-      followUrl: getFollowUrls().youtube
-    }
-  };
-
-  // Validate social media URL based on selected platform
-  const validateSocialUrl = (url: string, platform: Platform): boolean => {
-    return platformConfigs[platform].regex.test(url);
-  };
-
-  // Check if this link has reached the configurable follower limit
-  const hasReachedLimit = (url: string): boolean => {
-    const currentTotal = followerTracker.get(url) || 0;
-    return currentTotal >= followerLimit;
-  };
-
-  // Check if adding selected followers would exceed the configurable limit
-  const checkFollowerLimit = (url: string, newFollowers: number): boolean => {
-    const currentTotal = followerTracker.get(url) || 0;
-    return currentTotal + newFollowers > followerLimit;
-  };
-
-  // Get available follower options for current link
-  const getAvailableFollowerOptions = (url: string): number[] => {
-    if (!url) return followerOptions;
+  const getAvailableFollowerOptions = (link: string): number[] => {
+    const linkMissions = missions.filter(mission => mission.socialLink === link);
+    const totalFollowersForLink = linkMissions.reduce((sum, mission) => sum + mission.followers, 0);
     
-    const currentTotal = followerTracker.get(url) || 0;
-    
-    // If link has reached the limit, no options available
-    if (currentTotal >= followerLimit) return [];
-    
-    return followerOptions.filter(amount => {
-      // Don't show if it would exceed the limit
-      if (currentTotal + amount > followerLimit) return false;
-      return true;
-    });
+    return followerOptions.filter(count => totalFollowersForLink + count <= followerLimit);
   };
 
-  // Handle social media link input
-  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const link = e.target.value;
-    setSocialLink(link);
-    
-    if (link && !validateSocialUrl(link, selectedPlatform)) {
-      setLinkError(`Please enter a valid ${platformConfigs[selectedPlatform].name} profile URL (e.g., ${platformConfigs[selectedPlatform].placeholder})`);
-      setShowMissions(false);
-    } else if (link && hasReachedLimit(link)) {
-      setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
-      setShowMissions(false);
-    } else if (link && selectedFollowers) {
-      if (checkFollowerLimit(link, selectedFollowers)) {
-        setLinkError(`Adding ${selectedFollowers} followers would exceed the ${followerLimit} follower limit for this profile.`);
-        setShowMissions(false);
-      } else {
-        setLinkError('');
-        setShowMissions(true);
-      }
-    } else {
-      setLinkError('');
-      if (link && selectedFollowers) {
-        setShowMissions(true);
-      }
-    }
-  };
-
-  // Handle platform selection
-  const handlePlatformSelect = (platform: Platform) => {
-    setSelectedPlatform(platform);
-    setSocialLink('');
-    setSelectedFollowers(null);
-    setLinkError('');
-    setShowMissions(false);
-  };
-
-  // Handle follower selection
   const handleFollowerSelect = (count: number) => {
     const label = getLabelForAmount(count);
     
-    // Don't allow selection of SOON buttons
     if (label === 'SOON') {
       toast({
         title: "Coming Soon",
@@ -186,389 +122,274 @@ const Index = () => {
 
     setSelectedFollowers(count);
     
-    // Check if this selection is valid for the current link
     if (socialLink) {
-      if (hasReachedLimit(socialLink)) {
-        setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
-        setShowMissions(false);
-      } else if (checkFollowerLimit(socialLink, count)) {
-        setLinkError(`Adding ${count} followers would exceed the ${followerLimit} follower limit for this profile.`);
-        setShowMissions(false);
-      } else {
-        setLinkError('');
-        setShowMissions(true);
+      const isAvailable = getAvailableFollowerOptions(socialLink).includes(count);
+      if (!isAvailable) {
+        toast({
+          title: "Selection Not Available",
+          description: `This selection would exceed the follower limit for this profile.`,
+          duration: 3000,
+        });
+        return;
       }
-    } else {
-      setShowMissions(true);
     }
-    
-    setWatchedAds([]);
-    setFollowClicked(false);
+
+    console.log(`Selected ${count} followers`);
   };
 
-  // Load existing data on component mount
-  useEffect(() => {
-    const existingData = JSON.parse(localStorage.getItem('velionMissions') || '[]');
-    
-    // Rebuild tracking maps from existing data
-    existingData.forEach((mission: any) => {
-      const currentTotal = followerTracker.get(mission.socialLink || mission.tiktokLink) || 0;
-      followerTracker.set(mission.socialLink || mission.tiktokLink, currentTotal + mission.followers);
-      
-      const linkKey = mission.socialLink || mission.tiktokLink;
-      if (!usedFollowerAmounts.has(linkKey)) {
-        usedFollowerAmounts.set(linkKey, new Set());
-      }
-      usedFollowerAmounts.get(linkKey)!.add(mission.followers);
-    });
-  }, []);
-
-  // Handle ad watching
-  const handleAdWatch = (adIndex: number) => {
-    if (!watchedAds.includes(adIndex)) {
-      setWatchedAds([...watchedAds, adIndex]);
+  const handleSubmit = async () => {
+    if (!socialLink || !selectedFollowers) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a social media link and select follower count.",
+        variant: "destructive",
+      });
+      return;
     }
-  };
 
-  // Handle follow button click
-  const handleFollowClick = () => {
-    // Open the specific account URL for the selected platform
-    window.open(platformConfigs[selectedPlatform].followUrl, '_blank');
-    setFollowClicked(true);
-    
-    // Show the styled popup dialog
-    setShowFollowDialog(true);
-  };
+    const platform = detectPlatform(socialLink);
+    if (platform === 'unknown') {
+      toast({
+        title: "Invalid Platform",
+        description: "Please enter a valid TikTok, Instagram, or YouTube link.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  // Check if send button should be enabled
-  const isSendEnabled = () => {
-    if (!selectedFollowers || !socialLink || linkError) return false;
-    if (hasReachedLimit(socialLink)) return false;
-    
-    const requiredAds = Math.floor(selectedFollowers / 2);
-    return watchedAds.length >= requiredAds && followClicked;
-  };
+    const availableOptions = getAvailableFollowerOptions(socialLink);
+    if (!availableOptions.includes(selectedFollowers)) {
+      toast({
+        title: "Follower Limit Exceeded",
+        description: `This selection would exceed the ${followerLimit} follower limit for this profile.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-  // Handle send button
-  const handleSend = () => {
-    if (!isSendEnabled()) return;
+    const existingMissions = missions.filter(mission => mission.socialLink === socialLink);
+    const totalFollowersForLink = existingMissions.reduce((sum, mission) => sum + mission.followers, 0) + selectedFollowers;
 
-    // Update follower tracker with new total
-    const currentTotal = followerTracker.get(socialLink) || 0;
-    const newTotal = currentTotal + selectedFollowers!;
-    followerTracker.set(socialLink, newTotal);
-
-    // Create form data to send to management page
-    const formData = {
+    const newMission: Mission = {
       socialLink,
-      platform: selectedPlatform,
+      platform,
       followers: selectedFollowers,
-      adsWatched: watchedAds.length,
-      followCompleted: followClicked,
+      adsWatched: Math.floor(Math.random() * 5) + 1,
+      followCompleted: false,
       timestamp: new Date().toISOString(),
-      totalFollowersForLink: newTotal
+      totalFollowersForLink
     };
 
-    console.log('Sending data:', formData);
+    const updatedMissions = [...missions, newMission];
+    setMissions(updatedMissions);
+    localStorage.setItem('velionMissions', JSON.stringify(updatedMissions));
 
-    // Store data in localStorage for management page
-    const existingData = JSON.parse(localStorage.getItem('velionMissions') || '[]');
-    existingData.push(formData);
-    localStorage.setItem('velionMissions', JSON.stringify(existingData));
-
-    // Show success message with limit warning if applicable
-    if (newTotal >= followerLimit) {
-      toast({
-        title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile has now reached the ${followerLimit} follower limit and cannot be used again.`,
-        duration: 7000,
-      });
-    } else {
-      toast({
-        title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile now has ${newTotal}/${followerLimit} followers.`,
-        duration: 5000,
-      });
-    }
-
-    // Reset form
     setSocialLink('');
     setSelectedFollowers(null);
-    setWatchedAds([]);
-    setFollowClicked(false);
-    setShowMissions(false);
-    setLinkError('');
+    setIsDialogOpen(false);
+
+    toast({
+      title: "Mission Started!",
+      description: `You'll receive ${selectedFollowers} followers for your ${platform} profile. Please watch ${newMission.adsWatched} ads to complete the mission.`,
+    });
   };
 
-  // Get current link status for display
-  const getCurrentLinkStatus = () => {
-    if (!socialLink) return null;
-    const currentTotal = followerTracker.get(socialLink) || 0;
-    const availableOptions = getAvailableFollowerOptions(socialLink);
-    
-    return {
-      currentTotal,
-      remainingSlots: followerLimit - currentTotal,
-      isAtLimit: currentTotal >= followerLimit,
-      availableOptions: availableOptions.length
-    };
+  const handleFollowClick = (platform: string) => {
+    const url = platformUrls[platform as keyof typeof platformUrls];
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
-  const linkStatus = getCurrentLinkStatus();
+  console.log("About to render Index component UI");
 
   return (
-    <div className="min-h-screen bg-liquid-bg text-liquid-text p-6 relative overflow-hidden">
-      {/* Animated background blobs */}
-      <div className="liquid-blob w-96 h-96 top-10 -left-20 opacity-30"></div>
-      <div className="liquid-blob w-80 h-80 top-1/2 -right-40 opacity-20" style={{ animationDelay: '2s' }}></div>
-      <div className="liquid-blob w-64 h-64 bottom-20 left-1/3 opacity-25" style={{ animationDelay: '4s' }}></div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        {/* Title */}
-        <div className="text-center mb-16">
-          <h1 className="text-6xl md:text-8xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient mb-6 animate-float">
-            WELCOME TO VELION
+    <div className="min-h-screen bg-liquid-bg text-liquid-text relative overflow-hidden">
+      {/* Background elements */}
+      <div className="liquid-blob w-96 h-96 top-10 -left-20 opacity-20"></div>
+      <div className="liquid-blob w-80 h-80 top-1/2 -right-40 opacity-15" style={{ animationDelay: '3s' }}></div>
+      <div className="liquid-blob w-72 h-72 bottom-20 left-1/3 opacity-25" style={{ animationDelay: '6s' }}></div>
+      
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header */}
+        <header className="text-center py-12 px-6">
+          <h1 className="text-6xl md:text-8xl font-inter font-black text-transparent bg-clip-text bg-liquid-gradient mb-6 leading-tight">
+            VELION
           </h1>
-          <div className="w-32 h-1 bg-gradient-to-r from-liquid-primary to-liquid-secondary mx-auto rounded-full opacity-80"></div>
-          <p className="text-liquid-muted font-inter text-lg mt-4">Modern follower reward system</p>
-        </div>
+          <div className="w-24 h-1 bg-gradient-to-r from-liquid-primary to-liquid-secondary mx-auto rounded-full opacity-80 mb-4"></div>
+          <p className="text-liquid-muted font-inter text-xl max-w-2xl mx-auto">
+            Grow your social media presence with our advanced follower system
+          </p>
+        </header>
 
-        {/* Platform Selection */}
-        <div className="mb-8">
-          <Label className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
-            Choose Platform
-          </Label>
-          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-            {Object.entries(platformConfigs).map(([key, config]) => (
-              <button
-                key={key}
-                onClick={() => handlePlatformSelect(key as Platform)}
-                className={`flex items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${
-                  selectedPlatform === key
-                    ? 'bg-gradient-to-r from-liquid-primary to-liquid-secondary text-white border-liquid-primary/50 shadow-lg'
-                    : 'bg-liquid-surface/50 text-liquid-text border-white/10 hover:border-liquid-primary/30'
-                }`}
-              >
-                {config.icon}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Social Media Profile Link Input */}
-        <div className="mb-12">
-          <Label htmlFor="social-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
-            Enter your {platformConfigs[selectedPlatform].name} profile link
-          </Label>
-          <Input
-            id="social-link"
-            type="url"
-            value={socialLink}
-            onChange={handleLinkChange}
-            placeholder={platformConfigs[selectedPlatform].placeholder}
-            className="liquid-input w-full text-lg"
-          />
-          {linkError && (
-            <p className="error-message">{linkError}</p>
-          )}
-          
-          {/* Link Status Display */}
-          {linkStatus && socialLink && !linkError && (
-            <div className="mt-4 p-4 bg-liquid-surface/30 rounded-xl border border-white/10">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-liquid-muted font-inter text-sm">Profile Status</span>
-                <span className={`font-inter font-medium ${linkStatus.isAtLimit ? 'text-red-400' : 'text-liquid-primary'}`}>
-                  {linkStatus.currentTotal}/{followerLimit} followers used
-                </span>
-              </div>
-              <div className="w-full bg-liquid-surface rounded-full h-2 mb-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-500 ${
-                    linkStatus.isAtLimit 
-                      ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                      : 'bg-gradient-to-r from-liquid-primary to-liquid-secondary'
-                  }`}
-                  style={{ width: `${(linkStatus.currentTotal / followerLimit) * 100}%` }}
-                ></div>
-              </div>
-              {linkStatus.isAtLimit ? (
-                <p className="text-red-400 font-inter text-sm font-medium">
-                  ⚠️ This profile has reached the maximum limit and cannot be used again
-                </p>
-              ) : (
-                <p className="text-liquid-accent font-inter text-sm">
-                  ✓ {linkStatus.remainingSlots} followers remaining • {linkStatus.availableOptions} options available
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Followers Selection */}
-        <div className="mb-12">
-          <Label className="block text-xl font-inter font-semibold mb-6 text-liquid-text">
-            Choose followers amount
-          </Label>
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
-            {followerOptions.map((count) => {
-              const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
-              const label = getLabelForAmount(count);
-              const isSoon = label === 'SOON';
-              const isDisabled = !isAvailable || isSoon;
-              
-              return (
-                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'soon-button' : ''}`}>
-                  <input
-                    type="radio"
-                    id={`followers-${count}`}
-                    name="followers"
-                    value={count}
-                    checked={selectedFollowers === count}
-                    onChange={() => handleFollowerSelect(count)}
-                    disabled={isDisabled}
-                  />
-                  <label 
-                    htmlFor={`followers-${count}`} 
-                    className={`${!isAvailable && !isSoon ? 'line-through' : ''} ${isSoon ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    {count}
-                  </label>
-                  {label && isAvailable && (
-                    <div className="absolute -top-2 -right-2 z-10">
-                      <span className={`text-xs px-2 py-1 rounded-full font-bold shadow-lg ${
-                        label === 'NEW' 
-                          ? 'bg-green-500 text-white animate-pulse' 
-                          : 'bg-blue-500/80 text-white'
-                      }`}>
-                        {label}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {socialLink && getAvailableFollowerOptions(socialLink).length === 0 && (
-            <p className="text-red-400 font-inter text-sm mt-4 text-center">
-              No follower options available for this profile
-            </p>
-          )}
-        </div>
-
-        {/* Mission Section */}
-        {showMissions && selectedFollowers && (
-          <div className="mb-12 liquid-card animate-float">
-            <h2 className="text-3xl font-inter font-bold mb-8 text-center text-transparent bg-clip-text bg-liquid-gradient">
-              Complete Your Mission
-            </h2>
+        {/* Main Content */}
+        <main className="flex-1 px-6 pb-12">
+          <div className="max-w-4xl mx-auto">
             
-            {/* Watch Ads Section */}
-            <div className="mb-10">
-              <h3 className="text-2xl font-inter font-semibold mb-6 text-liquid-text">
-                Watch Ads ({Math.floor(selectedFollowers / 2)} required)
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {Array.from({ length: Math.floor(selectedFollowers / 2) }, (_, index) => (
+            {/* Social Media Input */}
+            <Card className="mb-8 bg-liquid-surface/30 backdrop-blur-sm border-white/10">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-liquid-text">Enter Your Social Media Link</CardTitle>
+                <CardDescription className="text-liquid-muted">
+                  Paste your TikTok, Instagram, or YouTube profile link to get started
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Input
+                    type="url"
+                    placeholder="https://www.tiktok.com/@username"
+                    value={socialLink}
+                    onChange={(e) => setSocialLink(e.target.value)}
+                    className="liquid-input flex-1"
+                  />
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        className="liquid-button"
+                        disabled={!socialLink}
+                      >
+                        Get Followers
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-liquid-surface border-white/10 text-liquid-text">
+                      <DialogHeader>
+                        <DialogTitle>Select Follower Package</DialogTitle>
+                        <DialogDescription className="text-liquid-muted">
+                          Choose how many followers you want to receive
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Follower Options</h3>
+                          <div className="grid grid-cols-3 gap-3">
+                            {followerOptions.map((count) => {
+                              const isAvailable = socialLink ? getAvailableFollowerOptions(socialLink).includes(count) : true;
+                              const label = getLabelForAmount(count);
+                              const isSoon = label === 'SOON';
+                              const isDisabled = !isAvailable || isSoon;
+                              
+                              return (
+                                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'soon-button' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    id={`followers-${count}`}
+                                    name="followers"
+                                    value={count}
+                                    checked={selectedFollowers === count}
+                                    onChange={() => handleFollowerSelect(count)}
+                                    disabled={isDisabled}
+                                  />
+                                  <label 
+                                    htmlFor={`followers-${count}`} 
+                                    className={`${!isAvailable && !isSoon ? 'line-through' : ''} ${isSoon ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                  >
+                                    {count}
+                                  </label>
+                                  {label && isAvailable && (
+                                    <Badge 
+                                      className={`absolute -top-2 -right-2 text-xs px-2 py-1 ${
+                                        label === 'NEW' 
+                                          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                                          : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                      }`}
+                                    >
+                                      {label}
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <Button 
+                          onClick={handleSubmit}
+                          disabled={!selectedFollowers}
+                          className="liquid-button w-full"
+                        >
+                          Start Mission
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Follow Our Accounts */}
+            <Card className="mb-8 bg-liquid-surface/30 backdrop-blur-sm border-white/10">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-liquid-text">Follow Our Accounts</CardTitle>
+                <CardDescription className="text-liquid-muted">
+                  Support us by following our official social media accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4 justify-center">
                   <Button
-                    key={index}
-                    onClick={() => handleAdWatch(index)}
-                    className={`liquid-button ${watchedAds.includes(index) ? 'active' : ''}`}
+                    onClick={() => handleFollowClick('tiktok')}
+                    className="liquid-button bg-black hover:bg-gray-800 text-white"
                   >
-                    {watchedAds.includes(index) ? '✓' : `Ad ${index + 1}`}
+                    Follow on TikTok
                   </Button>
-                ))}
-              </div>
-              <div className="mt-4 bg-liquid-surface/30 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-liquid-muted font-inter text-sm">Progress</span>
-                  <span className="text-liquid-primary font-inter font-medium">{watchedAds.length}/{Math.floor(selectedFollowers / 2)}</span>
+                  <Button
+                    onClick={() => handleFollowClick('instagram')}
+                    className="liquid-button bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                  >
+                    Follow on Instagram
+                  </Button>
+                  <Button
+                    onClick={() => handleFollowClick('youtube')}
+                    className="liquid-button bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Subscribe on YouTube
+                  </Button>
                 </div>
-                <div className="w-full bg-liquid-surface rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-liquid-primary to-liquid-secondary h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(watchedAds.length / Math.floor(selectedFollowers / 2)) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Follow Account Section */}
-            <div className="mb-8">
-              <h3 className="text-2xl font-inter font-semibold mb-6 text-liquid-text">
-                Follow Account
-              </h3>
-              <Button
-                onClick={handleFollowClick}
-                className={`liquid-button w-full md:w-auto ${followClicked ? 'active' : ''}`}
-              >
-                {followClicked ? '✓ Follow Completed' : `Follow this ${platformConfigs[selectedPlatform].name} account`}
-              </Button>
-              {followClicked && (
-                <p className="text-liquid-accent font-inter text-sm mt-3">
-                  ✓ Follow requirement completed
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Send Button */}
-        {showMissions && (
-          <div className="text-center">
-            <Button
-              onClick={handleSend}
-              disabled={!isSendEnabled()}
-              className="liquid-button text-2xl px-16 py-6 font-black"
-            >
-              SEND MISSION
-            </Button>
-            {!isSendEnabled() && selectedFollowers && (
-              <p className="text-liquid-muted font-inter text-sm mt-4">
-                Complete all missions to activate the send button
-              </p>
+            {/* Mission Stats */}
+            {missions.length > 0 && (
+              <Card className="bg-liquid-surface/30 backdrop-blur-sm border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-2xl font-bold text-liquid-text">Your Mission Stats</CardTitle>
+                  <CardDescription className="text-liquid-muted">
+                    Track your progress and achievements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div className="space-y-2">
+                      <div className="text-3xl font-bold text-liquid-primary">{missions.length}</div>
+                      <div className="text-sm text-liquid-muted">Total Missions</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-3xl font-bold text-liquid-primary">
+                        {missions.reduce((sum, mission) => sum + mission.followers, 0)}
+                      </div>
+                      <div className="text-sm text-liquid-muted">Followers Gained</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-3xl font-bold text-liquid-primary">
+                        {missions.reduce((sum, mission) => sum + mission.adsWatched, 0)}
+                      </div>
+                      <div className="text-sm text-liquid-muted">Ads Watched</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-3xl font-bold text-liquid-primary">
+                        {missions.filter(mission => mission.followCompleted).length}
+                      </div>
+                      <div className="text-sm text-liquid-muted">Completed</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="text-center mt-16 pt-8 border-t border-white/10">
-          <p className="text-liquid-muted/70 font-inter text-sm">
-            Velion System v3.0 | Modern Liquid Design
-          </p>
-        </div>
+        </main>
       </div>
-
-      {/* Follow Account Dialog */}
-      <Dialog open={showFollowDialog} onOpenChange={setShowFollowDialog}>
-        <DialogContent className="max-w-md mx-auto bg-liquid-surface/95 backdrop-blur-lg border border-white/20 rounded-3xl text-liquid-text">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-inter font-bold text-center text-transparent bg-clip-text bg-liquid-gradient mb-4">
-              Important Notice
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-liquid-primary to-liquid-secondary flex items-center justify-center">
-                {platformConfigs[selectedPlatform].icon}
-              </div>
-            </div>
-            <p className="text-center font-inter text-lg leading-relaxed">
-              Please make sure you have <span className="font-bold text-liquid-primary">followed the account</span> on {platformConfigs[selectedPlatform].name}.
-            </p>
-            <p className="text-center font-inter text-sm text-liquid-muted">
-              If you haven't followed or if you unfollow later, you will <span className="font-semibold text-red-400">not receive any followers</span>.
-            </p>
-            <div className="pt-4">
-              <Button 
-                onClick={() => setShowFollowDialog(false)}
-                className="liquid-button w-full"
-              >
-                I understand
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
