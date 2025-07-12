@@ -1,42 +1,218 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
   }
-  to {
-    transform: rotate(360deg);
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Liquid Design System */
+.liquid-bg {
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  position: relative;
 }
 
-.card {
-  padding: 2em;
+.liquid-text {
+  color: hsl(var(--foreground));
 }
 
-.read-the-docs {
-  color: #888;
+.liquid-muted {
+  color: hsl(var(--muted-foreground));
+}
+
+.liquid-primary {
+  color: hsl(var(--primary));
+}
+
+.liquid-secondary {
+  color: hsl(var(--secondary-foreground));
+}
+
+.liquid-accent {
+  color: hsl(var(--accent-foreground));
+}
+
+.liquid-surface {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+.liquid-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+}
+
+/* Animated Blob Backgrounds */
+.liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.3) 0%, hsl(var(--secondary) / 0.2) 100%);
+  filter: blur(60px);
+  animation: float 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(90deg); }
+  50% { transform: translateY(-10px) rotate(180deg); }
+  75% { transform: translateY(-30px) rotate(270deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Button Components */
+.liquid-button {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px hsl(var(--primary) / 0.3);
+}
+
+.liquid-button:active {
+  transform: translateY(0px);
+}
+
+.liquid-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.liquid-button.active {
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--primary)) 100%);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+}
+
+/* Input Components */
+.liquid-input {
+  background: hsl(var(--card) / 0.5);
+  border: 1px solid hsl(var(--border));
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.liquid-input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.liquid-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Select Components */
+.liquid-select {
+  background: hsl(var(--card) / 0.5);
+  border: 1px solid hsl(var(--border));
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
+}
+
+/* Card Components */
+.liquid-card {
+  background: hsl(var(--card) / 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 8px 32px hsl(var(--primary) / 0.1);
+}
+
+/* Radio Button Styling */
+.radio-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.radio-option label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: hsl(var(--card) / 0.3);
+  border: 2px solid hsl(var(--border));
+  border-radius: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.radio-option input[type="radio"]:checked + label {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  border-color: hsl(var(--primary));
+  color: white;
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.3);
+  transform: translateY(-2px);
+}
+
+.radio-option:hover label {
+  border-color: hsl(var(--primary) / 0.5);
+  transform: translateY(-1px);
+}
+
+/* SOON button styling - faded but functional */
+.radio-option.soon-button {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+.radio-option.soon-button:hover {
+  opacity: 0.8;
+  filter: grayscale(0.1);
+}
+
+.radio-option.soon-button input[type="radio"]:checked + label {
+  opacity: 1;
+  filter: none;
+}
+
+/* Error message styling */
+.error-message {
+  color: hsl(var(--destructive));
+  font-size: 14px;
+  margin-top: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
 }

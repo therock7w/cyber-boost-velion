@@ -403,7 +403,7 @@ const Index = () => {
               const label = getLabelForAmount(count);
               const isSoon = label === 'SOON';
               return (
-                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'opacity-60' : ''}`}>
+                <div key={count} className={`radio-option relative ${!isAvailable ? 'opacity-40 pointer-events-none' : ''} ${isSoon ? 'soon-button' : ''}`}>
                   <input
                     type="radio"
                     id={`followers-${count}`}
@@ -413,7 +413,7 @@ const Index = () => {
                     onChange={() => handleFollowerSelect(count)}
                     disabled={!isAvailable}
                   />
-                  <label htmlFor={`followers-${count}`} className={`${!isAvailable ? 'line-through' : ''} ${isSoon ? 'transition-all duration-300' : ''}`}>
+                  <label htmlFor={`followers-${count}`} className={`${!isAvailable ? 'line-through' : ''}`}>
                     {count}
                   </label>
                   {label && isAvailable && (
