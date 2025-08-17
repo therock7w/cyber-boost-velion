@@ -132,4 +132,16 @@
     animation: liquid-flow 8s ease-in-out infinite;
     z-index: -1;
   }
+
+  .soon-button {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .soon-button label {
+    cursor: not-allowed !important;
+    background: linear-gradient(135deg, rgba(100, 100, 100, 0.3), rgba(150, 150, 150, 0.2)) !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
 }

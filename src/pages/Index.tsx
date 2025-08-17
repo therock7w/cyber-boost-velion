@@ -12,19 +12,31 @@ const followerTracker = new Map<string, number>();
 const usedFollowerAmounts = new Map<string, Set<number>>();
 
 type Platform = 'tiktok' | 'instagram' | 'youtube';
+type ActionType = 'followers' | 'likes' | 'comments';
 
 interface FollowerLabel {
   amount: number;
   label: 'NEW' | 'SOON' | null;
 }
 
+interface VideoFeature {
+  videoUrl: string;
+  likes: number;
+  comments: number;
+}
+
 const Index = () => {
   const [socialLink, setSocialLink] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('tiktok');
+  const [selectedAction, setSelectedAction] = useState<ActionType>('followers');
   const [selectedFollowers, setSelectedFollowers] = useState<number | null>(null);
+  const [selectedLikes, setSelectedLikes] = useState<number | null>(null);
+  const [selectedComments, setSelectedComments] = useState<number | null>(null);
   const [watchedAds, setWatchedAds] = useState<number[]>([]);
   const [followClicked, setFollowClicked] = useState(false);
   const [linkError, setLinkError] = useState('');
+  const [videoError, setVideoError] = useState('');
   const [showMissions, setShowMissions] = useState(false);
   const [showFollowDialog, setShowFollowDialog] = useState(false);
   const [followerLimit, setFollowerLimit] = useState<number>(100);
@@ -78,25 +90,31 @@ const Index = () => {
       name: 'TikTok',
       icon: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.10z"/>
         </svg>
       ),
       placeholder: 'https://www.tiktok.com/@username',
+      videoPlaceholder: 'https://www.tiktok.com/@username/video/1234567890',
       regex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+/i,
+      videoRegex: /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i,
       followUrl: getFollowUrls().tiktok
     },
     instagram: {
       name: 'Instagram',
       icon: <Instagram className="w-8 h-8" />,
       placeholder: 'https://www.instagram.com/username',
+      videoPlaceholder: 'https://www.instagram.com/reel/ABC123xyz/',
       regex: /^https?:\/\/(www\.)?instagram\.com\/[\w.-]+/i,
+      videoRegex: /^https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[\w.-]+/i,
       followUrl: getFollowUrls().instagram
     },
     youtube: {
       name: 'YouTube',
       icon: <Youtube className="w-8 h-8" />,
       placeholder: 'https://www.youtube.com/@username',
+      videoPlaceholder: 'https://www.youtube.com/watch?v=ABC123xyz',
       regex: /^https?:\/\/(www\.)?youtube\.com\/@[\w.-]+/i,
+      videoRegex: /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w.-]+/i,
       followUrl: getFollowUrls().youtube
     }
   };
@@ -104,6 +122,11 @@ const Index = () => {
   // Validate social media URL based on selected platform
   const validateSocialUrl = (url: string, platform: Platform): boolean => {
     return platformConfigs[platform].regex.test(url);
+  };
+
+  // Validate video URL based on selected platform
+  const validateVideoUrl = (url: string, platform: Platform): boolean => {
+    return platformConfigs[platform].videoRegex.test(url);
   };
 
   // Check if this link has reached the configurable follower limit
@@ -145,46 +168,104 @@ const Index = () => {
     } else if (link && hasReachedLimit(link)) {
       setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
       setShowMissions(false);
-    } else if (link && selectedFollowers) {
-      if (checkFollowerLimit(link, selectedFollowers)) {
-        setLinkError(`Adding ${selectedFollowers} followers would exceed the ${followerLimit} follower limit for this profile.`);
+    } else if (link && getSelectedAmount()) {
+      if (checkFollowerLimit(link, getSelectedAmount()!)) {
+        setLinkError(`Adding ${getSelectedAmount()} ${selectedAction} would exceed the ${followerLimit} follower limit for this profile.`);
         setShowMissions(false);
       } else {
         setLinkError('');
-        setShowMissions(true);
+        setShowMissions(shouldShowMissions());
       }
     } else {
       setLinkError('');
-      if (link && selectedFollowers) {
+      if (link && getSelectedAmount()) {
+        setShowMissions(shouldShowMissions());
+      }
+    }
+  };
+
+  // Handle video URL input
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = e.target.value;
+    setVideoUrl(video);
+    
+    if (video && !validateVideoUrl(video, selectedPlatform)) {
+      setVideoError(`Please enter a valid ${platformConfigs[selectedPlatform].name} video URL (e.g., ${platformConfigs[selectedPlatform].videoPlaceholder})`);
+      setShowMissions(false);
+    } else {
+      setVideoError('');
+      if (shouldShowMissions()) {
         setShowMissions(true);
       }
     }
+  };
+
+  // Get selected amount based on action type
+  const getSelectedAmount = (): number | null => {
+    switch (selectedAction) {
+      case 'followers': return selectedFollowers;
+      case 'likes': return selectedLikes;
+      case 'comments': return selectedComments;
+      default: return null;
+    }
+  };
+
+  // Check if missions should be shown
+  const shouldShowMissions = (): boolean => {
+    const hasValidSocialLink = socialLink && !linkError;
+    const hasValidVideoLink = selectedAction !== 'followers' ? (videoUrl && !videoError) : true;
+    const hasSelectedAmount = getSelectedAmount() !== null;
+    
+    return hasValidSocialLink && hasValidVideoLink && hasSelectedAmount;
   };
 
   // Handle platform selection
   const handlePlatformSelect = (platform: Platform) => {
     setSelectedPlatform(platform);
     setSocialLink('');
+    setVideoUrl('');
     setSelectedFollowers(null);
+    setSelectedLikes(null);
+    setSelectedComments(null);
     setLinkError('');
+    setVideoError('');
     setShowMissions(false);
   };
 
-  // Handle follower selection
-  const handleFollowerSelect = (count: number) => {
+  // Handle amount selection for any action type
+  const handleAmountSelect = (count: number, actionType: ActionType) => {
     const label = getLabelForAmount(count);
     
     // Don't allow selection of SOON buttons
     if (label === 'SOON') {
       toast({
         title: "Coming Soon",
-        description: `${count} followers option is coming soon and not available yet.`,
+        description: `${count} ${actionType} option is coming soon and not available yet.`,
         duration: 3000,
       });
       return;
     }
 
-    setSelectedFollowers(count);
+    // Set the selected amount based on action type
+    switch (actionType) {
+      case 'followers':
+        setSelectedFollowers(count);
+        setSelectedLikes(null);
+        setSelectedComments(null);
+        break;
+      case 'likes':
+        setSelectedLikes(count);
+        setSelectedFollowers(null);
+        setSelectedComments(null);
+        break;
+      case 'comments':
+        setSelectedComments(count);
+        setSelectedFollowers(null);
+        setSelectedLikes(null);
+        break;
+    }
+    
+    setSelectedAction(actionType);
     
     // Check if this selection is valid for the current link
     if (socialLink) {
@@ -192,14 +273,14 @@ const Index = () => {
         setLinkError(`This ${platformConfigs[selectedPlatform].name} profile has already received ${followerLimit} followers and is no longer available for use.`);
         setShowMissions(false);
       } else if (checkFollowerLimit(socialLink, count)) {
-        setLinkError(`Adding ${count} followers would exceed the ${followerLimit} follower limit for this profile.`);
+        setLinkError(`Adding ${count} ${actionType} would exceed the ${followerLimit} follower limit for this profile.`);
         setShowMissions(false);
       } else {
         setLinkError('');
-        setShowMissions(true);
+        setShowMissions(shouldShowMissions());
       }
     } else {
-      setShowMissions(true);
+      setShowMissions(shouldShowMissions());
     }
     
     setWatchedAds([]);
@@ -242,10 +323,12 @@ const Index = () => {
 
   // Check if send button should be enabled
   const isSendEnabled = () => {
-    if (!selectedFollowers || !socialLink || linkError) return false;
+    const selectedAmount = getSelectedAmount();
+    if (!selectedAmount || !socialLink || linkError) return false;
+    if (selectedAction !== 'followers' && (!videoUrl || videoError)) return false;
     if (hasReachedLimit(socialLink)) return false;
     
-    const requiredAds = Math.floor(selectedFollowers / 2);
+    const requiredAds = Math.floor(selectedAmount / 2);
     return watchedAds.length >= requiredAds && followClicked;
   };
 
@@ -253,16 +336,22 @@ const Index = () => {
   const handleSend = () => {
     if (!isSendEnabled()) return;
 
+    const selectedAmount = getSelectedAmount()!;
+    
     // Update follower tracker with new total
     const currentTotal = followerTracker.get(socialLink) || 0;
-    const newTotal = currentTotal + selectedFollowers!;
+    const newTotal = currentTotal + selectedAmount;
     followerTracker.set(socialLink, newTotal);
 
     // Create form data to send to management page
     const formData = {
       socialLink,
+      videoUrl: selectedAction !== 'followers' ? videoUrl : '',
       platform: selectedPlatform,
-      followers: selectedFollowers,
+      actionType: selectedAction,
+      followers: selectedAction === 'followers' ? selectedAmount : 0,
+      likes: selectedAction === 'likes' ? selectedAmount : 0,
+      comments: selectedAction === 'comments' ? selectedAmount : 0,
       adsWatched: watchedAds.length,
       followCompleted: followClicked,
       timestamp: new Date().toISOString(),
@@ -280,24 +369,28 @@ const Index = () => {
     if (newTotal >= followerLimit) {
       toast({
         title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile has now reached the ${followerLimit} follower limit and cannot be used again.`,
+        description: `Your ${selectedAction} mission has been submitted successfully. This profile has now reached the ${followerLimit} follower limit and cannot be used again.`,
         duration: 7000,
       });
     } else {
       toast({
         title: "Mission Completed!",
-        description: `Your mission has been submitted successfully. This profile now has ${newTotal}/${followerLimit} followers.`,
+        description: `Your ${selectedAction} mission has been submitted successfully. This profile now has ${newTotal}/${followerLimit} followers.`,
         duration: 5000,
       });
     }
 
     // Reset form
     setSocialLink('');
+    setVideoUrl('');
     setSelectedFollowers(null);
+    setSelectedLikes(null);
+    setSelectedComments(null);
     setWatchedAds([]);
     setFollowClicked(false);
     setShowMissions(false);
     setLinkError('');
+    setVideoError('');
   };
 
   // Get current link status for display
@@ -356,7 +449,7 @@ const Index = () => {
         </div>
 
         {/* Social Media Profile Link Input */}
-        <div className="mb-12">
+        <div className="mb-8">
           <Label htmlFor="social-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
             Enter your {platformConfigs[selectedPlatform].name} profile link
           </Label>
@@ -404,6 +497,27 @@ const Index = () => {
           )}
         </div>
 
+        {/* Video Link Input (for likes and comments) */}
+        <div className="mb-12">
+          <Label htmlFor="video-link" className="block text-xl font-inter font-semibold mb-4 text-liquid-text">
+            Enter video/reel link (for likes & comments)
+          </Label>
+          <Input
+            id="video-link"
+            type="url"
+            value={videoUrl}
+            onChange={handleVideoChange}
+            placeholder={platformConfigs[selectedPlatform].videoPlaceholder}
+            className="liquid-input w-full text-lg"
+          />
+          {videoError && (
+            <p className="error-message">{videoError}</p>
+          )}
+          <p className="text-liquid-muted font-inter text-sm mt-2">
+            This field is required for likes and comments missions
+          </p>
+        </div>
+
         {/* Followers Selection */}
         <div className="mb-12">
           <Label className="block text-xl font-inter font-semibold mb-6 text-liquid-text">
@@ -424,7 +538,7 @@ const Index = () => {
                     name="followers"
                     value={count}
                     checked={selectedFollowers === count}
-                    onChange={() => handleFollowerSelect(count)}
+                    onChange={() => handleAmountSelect(count, 'followers')}
                     disabled={isDisabled}
                   />
                   <label 

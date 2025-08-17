@@ -40,8 +40,12 @@ import { CheckCircle2, Settings, Save, Tag, X } from 'lucide-react';
 
 interface Mission {
   socialLink: string;
+  videoUrl?: string;
   platform: string;
+  actionType?: string;
   followers: number;
+  likes?: number;
+  comments?: number;
   adsWatched: number;
   followCompleted: boolean;
   timestamp: string;
@@ -205,6 +209,8 @@ const Management = () => {
 
   const totalMissions = missions.length;
   const totalFollowers = missions.reduce((sum, mission) => sum + mission.followers, 0);
+  const totalLikes = missions.reduce((sum, mission) => sum + (mission.likes || 0), 0);
+  const totalComments = missions.reduce((sum, mission) => sum + (mission.comments || 0), 0);
   const totalAdsWatched = missions.reduce((sum, mission) => sum + mission.adsWatched, 0);
 
   const savePlatformUrls = () => {
@@ -367,34 +373,54 @@ const Management = () => {
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <Card className="bg-liquid-surface/30 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-liquid-text">Total Missions</CardTitle>
-              <CardDescription className="text-liquid-muted">All completed missions</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-liquid-text">Total Missions</CardTitle>
+              <CardDescription className="text-liquid-muted text-sm">All completed</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-liquid-primary">{totalMissions}</div>
+              <div className="text-3xl font-bold text-liquid-primary">{totalMissions}</div>
             </CardContent>
           </Card>
 
           <Card className="bg-liquid-surface/30 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-liquid-text">Total Followers Rewarded</CardTitle>
-              <CardDescription className="text-liquid-muted">Across all missions</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-liquid-text">Total Followers</CardTitle>
+              <CardDescription className="text-liquid-muted text-sm">Across all missions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-liquid-primary">{totalFollowers}</div>
+              <div className="text-3xl font-bold text-liquid-primary">{totalFollowers}</div>
             </CardContent>
           </Card>
 
           <Card className="bg-liquid-surface/30 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-liquid-text">Total Ads Watched</CardTitle>
-              <CardDescription className="text-liquid-muted">Supporting content creators</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-liquid-text">Total Likes</CardTitle>
+              <CardDescription className="text-liquid-muted text-sm">Video engagement</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-liquid-primary">{totalAdsWatched}</div>
+              <div className="text-3xl font-bold text-liquid-secondary">{totalLikes}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-liquid-surface/30 border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-liquid-text">Total Comments</CardTitle>
+              <CardDescription className="text-liquid-muted text-sm">Video interaction</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-liquid-accent">{totalComments}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-liquid-surface/30 border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-liquid-text">Total Ads</CardTitle>
+              <CardDescription className="text-liquid-muted text-sm">Watched</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-liquid-primary">{totalAdsWatched}</div>
             </CardContent>
           </Card>
         </div>
@@ -455,31 +481,56 @@ const Management = () => {
             <TableCaption>A list of all follower missions.</TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Social Link</TableHead>
+                <TableHead>Social Link</TableHead>
+                <TableHead>Video URL</TableHead>
                 <TableHead>Platform</TableHead>
+                <TableHead>Action Type</TableHead>
                 <TableHead>Followers</TableHead>
+                <TableHead>Likes</TableHead>
+                <TableHead>Comments</TableHead>
                 <TableHead>Ads Watched</TableHead>
-                <TableHead>Follow Completed</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Total Followers for Link</TableHead>
+                <TableHead>Follow Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Total for Link</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMissions.map((mission, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{mission.socialLink}</TableCell>
-                  <TableCell>{mission.platform}</TableCell>
-                  <TableCell>{mission.followers}</TableCell>
-                  <TableCell>{mission.adsWatched}</TableCell>
-                  <TableCell>
-                    {mission.followCompleted ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-500 mx-auto" />
-                    ) : (
-                      'No'
-                    )}
+                <TableRow key={index} className="hover:bg-liquid-surface/20">
+                  <TableCell className="text-liquid-text font-medium">{mission.socialLink.length > 30 ? `${mission.socialLink.substring(0, 30)}...` : mission.socialLink}</TableCell>
+                  <TableCell className="text-liquid-text">
+                    {mission.videoUrl ? (
+                      <a href={mission.videoUrl} target="_blank" rel="noopener noreferrer" className="text-liquid-accent hover:text-liquid-primary">
+                        {mission.videoUrl.length > 25 ? `${mission.videoUrl.substring(0, 25)}...` : mission.videoUrl}
+                      </a>
+                    ) : '-'}
                   </TableCell>
-                  <TableCell>{format(new Date(mission.timestamp), 'PPP')}</TableCell>
-                  <TableCell>{mission.totalFollowersForLink}</TableCell>
+                  <TableCell className="text-liquid-text capitalize">{mission.platform}</TableCell>
+                  <TableCell className="text-liquid-text">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      mission.actionType === 'followers' ? 'bg-blue-500/20 text-blue-400' :
+                      mission.actionType === 'likes' ? 'bg-red-500/20 text-red-400' :
+                      mission.actionType === 'comments' ? 'bg-green-500/20 text-green-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {mission.actionType || 'followers'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-liquid-text font-medium">{mission.followers}</TableCell>
+                  <TableCell className="text-liquid-text font-medium">{mission.likes || '-'}</TableCell>
+                  <TableCell className="text-liquid-text font-medium">{mission.comments || '-'}</TableCell>
+                  <TableCell className="text-liquid-text">{mission.adsWatched}</TableCell>
+                  <TableCell className="text-liquid-text">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      mission.followCompleted 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                    }`}>
+                      {mission.followCompleted ? 'Completed' : 'Pending'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-liquid-text">{format(new Date(mission.timestamp), 'MMM dd, yyyy HH:mm')}</TableCell>
+                  <TableCell className="text-liquid-text font-medium">{mission.totalFollowersForLink}</TableCell>
                 </TableRow>
               ))}
               {filteredMissions.length === 0 && (
